@@ -12,6 +12,7 @@ interface ProductCardProps {
     imageUrl: string;
     exchangeRate: number;
     storeName: string;
+    storeId: string;
 }
 
 export function ProductCard({
@@ -21,6 +22,7 @@ export function ProductCard({
     imageUrl,
     exchangeRate,
     storeName,
+    storeId,
 }: ProductCardProps) {
     const addItem = useCart((state) => state.addItem);
     const priceBs = priceUsd * exchangeRate;
@@ -31,7 +33,9 @@ export function ProductCard({
             title,
             priceUsd,
             storeName,
+            storeId,
             quantity: 1,
+            imageUrl
         });
     };
 
@@ -56,11 +60,11 @@ export function ProductCard({
                     {title}
                 </h3>
                 <div className="mt-auto">
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex flex-col">
                         <span className="text-lg font-bold text-brand-red">
                             {formatCurrency(priceUsd, "USD")}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-sm font-medium text-gray-600">
                             {formatCurrency(priceBs, "VES")}
                         </span>
                     </div>

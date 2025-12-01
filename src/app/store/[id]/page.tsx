@@ -135,6 +135,7 @@ export default function StorePage() {
                                 imageUrl={product.image_url}
                                 exchangeRate={store.exchange_rate_bs}
                                 storeName={store.name}
+                                storeId={store.id}
                             />
                         ))}
                     </div>

@@ -5,8 +5,8 @@ import { ArrowLeft, MapPin, Loader2, Save, Camera } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import MapWrapper from "@/components/map-wrapper";
 import Image from "next/image";
+import { getExchangeRate } from "@/lib/utils";
 
 export default function SellerConfigPage() {
     const [rate, setRate] = useState<string>("");
@@ -25,21 +25,21 @@ export default function SellerConfigPage() {
     const router = useRouter();
 
     useEffect(() => {
-        async function fetchStore() {
+        async function fetchData() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 router.push('/login');
                 return;
             }
 
-            const { data: store, error } = await supabase
+            // Fetch Store
+            const { data: store } = await supabase
                 .from('stores')
                 .select('*')
                 .eq('owner_id', user.id)
                 .single();
 
             if (store) {
-                setRate(store.exchange_rate_bs?.toString() || "");
                 setPhone(store.phone_number || "");
                 setPaymentInfo(store.payment_info || "");
                 setStoreId(store.id);
@@ -47,9 +47,14 @@ export default function SellerConfigPage() {
                 setLng(store.lng);
                 if (store.image_url) setImagePreview(store.image_url);
             }
+
+            // Fetch Official Rate
+            const officialRate = await getExchangeRate();
+            setRate(officialRate.toString());
+
             setLoading(false);
         }
-        fetchStore();
+        fetchData();
     }, [supabase, router]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,22 +160,22 @@ export default function SellerConfigPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
                 <div className="flex items-center gap-2 mb-4">
                     <span className="text-xl">💵</span>
-                    <h2 className="font-bold text-gray-900">Tasa de Cambio (Hoy)</h2>
+                    <h2 className="font-bold text-gray-900">Tasa de Cambio (Oficial BCV)</h2>
                 </div>
 
                 <div className="relative mb-3">
                     <input
                         type="number"
                         value={rate}
-                        onChange={(e) => setRate(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full text-4xl font-bold text-brand-red border-b-2 border-gray-200 focus:border-brand-red outline-none py-2 text-center"
+                        readOnly
+                        className="w-full text-4xl font-bold text-gray-500 border-b-2 border-gray-100 bg-transparent outline-none py-2 text-center cursor-not-allowed"
                     />
-                    <span className="absolute right-4 bottom-4 text-gray-500 font-medium">Bs. por Dólar ($)</span>
+                    <span className="absolute right-4 bottom-4 text-gray-400 font-medium">Bs. por Dólar ($)</span>
                 </div>
 
-                <div className="bg-brand-yellow/20 text-yellow-800 text-xs p-3 rounded-lg font-medium">
-                    Esto actualizará todos tus precios en Bs automáticamente
+                <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg font-medium flex items-center gap-2">
+                    <span className="text-lg">ℹ️</span>
+                    La tasa se actualiza automáticamente según el BCV. No es necesario cambiarla manualmente.
                 </div>
             </div>
 
@@ -236,22 +241,20 @@ export default function SellerConfigPage() {
                 </p>
             </div>
 
-            {/* Payment Info Card */}
+            {/* Payment Methods Section */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                     <span className="text-xl">💳</span>
-                    <h2 className="font-bold text-gray-900">Datos de Pago Móvil</h2>
+                    <h2 className="font-bold text-gray-900">Métodos de Pago</h2>
                 </div>
-                <textarea
-                    value={paymentInfo}
-                    onChange={(e) => setPaymentInfo(e.target.value)}
-                    placeholder="Banco, Cédula, Teléfono..."
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red outline-none resize-none"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                    Esta información se mostrará al cliente al finalizar la compra.
+
+                <p className="text-sm text-gray-500 mb-4">
+                    Configura los métodos de pago que aceptas. Estos se mostrarán al cliente al finalizar la compra.
                 </p>
+
+                <div className="space-y-3 mb-4">
+                    <PaymentMethodsList storeId={storeId} />
+                </div>
             </div>
 
             {/* Save Button */}
@@ -261,7 +264,175 @@ export default function SellerConfigPage() {
                     disabled={saving}
                     className="w-full bg-brand-red text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                 >
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Guardar Cambios</>}
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Guardar Otros Cambios</>}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function PaymentMethodsList({ storeId }: { storeId: string | null }) {
+    const [methods, setMethods] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showModal, setShowModal] = useState(false);
+    const supabase = createClient();
+
+    const fetchMethods = async () => {
+        if (!storeId) return;
+        const { data } = await supabase.from('payment_methods').select('*').eq('store_id', storeId);
+        if (data) setMethods(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchMethods();
+    }, [storeId]);
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("¿Estás seguro de eliminar este método?")) return;
+        await supabase.from('payment_methods').delete().eq('id', id);
+        fetchMethods();
+    };
+
+    if (loading) return <div className="text-sm text-gray-400">Cargando métodos...</div>;
+
+    return (
+        <>
+            {methods.map((m) => (
+                <div key={m.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                        <p className="font-bold text-gray-900 capitalize">{m.type.replace('_', ' ')}</p>
+                        <p className="text-xs text-gray-500">
+                            {m.type === 'pago_movil' ? `${m.details.bank} - ${m.details.phone}` :
+                                m.type === 'zelle' ? m.details.email :
+                                    m.type === 'binance' ? m.details.email : 'Efectivo'}
+                        </p>
+                    </div>
+                    <button onClick={() => handleDelete(m.id)} className="text-red-500 p-2">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            ))}
+
+            <button
+                onClick={() => setShowModal(true)}
+                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+            >
+                <Plus className="w-5 h-5" />
+                Agregar Método de Pago
+            </button>
+
+            {showModal && (
+                <AddPaymentMethodModal
+                    storeId={storeId!}
+                    onClose={() => setShowModal(false)}
+                    onSuccess={() => {
+                        setShowModal(false);
+                        fetchMethods();
+                    }}
+                />
+            )}
+        </>
+    );
+}
+
+import { Trash2, Plus, X } from "lucide-react";
+
+function AddPaymentMethodModal({ storeId, onClose, onSuccess }: { storeId: string, onClose: () => void, onSuccess: () => void }) {
+    const [type, setType] = useState('pago_movil');
+    const [details, setDetails] = useState<any>({});
+    const [loading, setLoading] = useState(false);
+    const supabase = createClient();
+
+    const handleSubmit = async () => {
+        setLoading(true);
+        const { error } = await supabase.from('payment_methods').insert({
+            store_id: storeId,
+            type,
+            details
+        });
+        setLoading(false);
+        if (error) alert(error.message);
+        else onSuccess();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl p-6 animate-in slide-in-from-bottom-10">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-lg">Agregar Método</h3>
+                    <button onClick={onClose}><X className="w-6 h-6 text-gray-400" /></button>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Tipo</label>
+                        <select
+                            value={type}
+                            onChange={(e) => setType(e.target.value)}
+                            className="w-full p-3 rounded-xl border border-gray-200 bg-gray-50"
+                        >
+                            <option value="pago_movil">Pago Móvil</option>
+                            <option value="zelle">Zelle</option>
+                            <option value="binance">Binance</option>
+                            <option value="cash">Efectivo</option>
+                        </select>
+                    </div>
+
+                    {type === 'pago_movil' && (
+                        <>
+                            <input
+                                placeholder="Banco"
+                                className="w-full p-3 rounded-xl border border-gray-200"
+                                onChange={e => setDetails({ ...details, bank: e.target.value })}
+                            />
+                            <input
+                                placeholder="Cédula"
+                                className="w-full p-3 rounded-xl border border-gray-200"
+                                onChange={e => setDetails({ ...details, id: e.target.value })}
+                            />
+                            <input
+                                placeholder="Teléfono"
+                                className="w-full p-3 rounded-xl border border-gray-200"
+                                onChange={e => setDetails({ ...details, phone: e.target.value })}
+                            />
+                        </>
+                    )}
+
+                    {type === 'zelle' && (
+                        <>
+                            <input
+                                placeholder="Correo Electrónico"
+                                className="w-full p-3 rounded-xl border border-gray-200"
+                                onChange={e => setDetails({ ...details, email: e.target.value })}
+                            />
+                            <input
+                                placeholder="Nombre del Titular"
+                                className="w-full p-3 rounded-xl border border-gray-200"
+                                onChange={e => setDetails({ ...details, name: e.target.value })}
+                            />
+                        </>
+                    )}
+
+                    {type === 'binance' && (
+                        <input
+                            placeholder="Correo / Pay ID"
+                            className="w-full p-3 rounded-xl border border-gray-200"
+                            onChange={e => setDetails({ ...details, email: e.target.value })}
+                        />
+                    )}
+
+                    {type === 'cash' && (
+                        <p className="text-sm text-gray-500">El pago en efectivo se coordina al momento de la entrega.</p>
+                    )}
+                </div>
+
+                <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="w-full bg-brand-red text-white font-bold py-3 rounded-xl"
+                >
+                    {loading ? "Guardando..." : "Agregar Método"}
                 </button>
             </div>
         </div>

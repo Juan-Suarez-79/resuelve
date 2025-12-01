@@ -106,7 +106,7 @@ export default function SellerOrdersPage() {
                                         <span className="font-medium text-gray-700">{order.buyer_name}</span>
                                     </div>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        {order.order_items.length} items • {formatCurrency(order.total_usd)}
+                                        {order.order_items.length} items • {formatCurrency(order.total_usd, 'USD')}
                                     </p>
                                 </div>
                                 <span className={cn(

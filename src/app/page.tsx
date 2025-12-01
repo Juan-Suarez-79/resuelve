@@ -177,6 +177,7 @@ export default function Home() {
                     imageUrl={product.image_url}
                     exchangeRate={product.stores?.exchange_rate_bs || 0}
                     storeName={product.stores?.name || "Tienda"}
+                    storeId={product.store_id}
                   />
                 ))}
               </div>

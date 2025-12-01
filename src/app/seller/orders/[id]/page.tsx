@@ -136,7 +136,7 @@ export default function OrderDetailsPage() {
                                 </span>
                                 <p className="font-medium text-gray-800">{item.title}</p>
                             </div>
-                            <p className="font-bold text-gray-900">{formatCurrency(item.price_at_time_usd * item.quantity)}</p>
+                            <p className="font-bold text-gray-900">{formatCurrency(item.price_at_time_usd * item.quantity, 'USD')}</p>
                         </div>
                     ))}
                 </div>
@@ -144,7 +144,7 @@ export default function OrderDetailsPage() {
                 <div className="mt-6 pt-4 border-t border-gray-100 space-y-2">
                     <div className="flex justify-between text-lg font-bold text-gray-900">
                         <span>Total USD:</span>
-                        <span>{formatCurrency(order.total_usd)}</span>
+                        <span>{formatCurrency(order.total_usd, 'USD')}</span>
                     </div>
                     <div className="flex justify-between text-sm text-gray-500">
                         <span>Total Bs (Ref):</span>

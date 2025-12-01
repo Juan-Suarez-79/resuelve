@@ -121,9 +121,12 @@ export default function SellerProductsPage() {
                                     <Trash2 className="w-5 h-5" />
                                 </button>
                                 {/* Edit button placeholder - for full implementation would link to edit page */}
-                                <button className="p-2 text-gray-400 hover:text-blue-500 transition-colors">
+                                <Link
+                                    href={`/seller/products/${product.id}/edit`}
+                                    className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+                                >
                                     <Edit className="w-5 h-5" />
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     ))

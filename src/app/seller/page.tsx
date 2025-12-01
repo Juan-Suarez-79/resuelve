@@ -115,7 +115,7 @@ export default function SellerDashboard() {
                                 <div>
                                     <h3 className="font-bold text-gray-900">Pedido #{order.id.slice(0, 4)} - {order.buyer_name}</h3>
                                     <p className="text-sm text-gray-500">
-                                        {order.order_items.length} items • {formatCurrency(order.total_usd)}
+                                        {order.order_items.length} items • {formatCurrency(order.total_usd, 'USD')}
                                     </p>
                                 </div>
                                 <span className={`px-2 py-1 rounded-lg text-xs font-bold ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
