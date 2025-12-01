@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Star, Search, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, Star, Search, MapPin, Loader2, X } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useGeolocation, calculateDistance } from "@/lib/hooks/use-geolocation";
+import { useToast } from "@/components/ui/toast";
 
 export default function StorePage() {
     const params = useParams();
@@ -17,6 +18,14 @@ export default function StorePage() {
     const [loading, setLoading] = useState(true);
     const { location } = useGeolocation();
     const supabase = createClient();
+    const { toast } = useToast();
+
+    const [reviews, setReviews] = useState<any[]>([]);
+    const [averageRating, setAverageRating] = useState(0);
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [rating, setRating] = useState(5);
+    const [comment, setComment] = useState("");
+    const [submittingReview, setSubmittingReview] = useState(false);
 
     useEffect(() => {
         async function fetchStoreData() {
@@ -36,15 +45,29 @@ export default function StorePage() {
             setStore(storeData);
 
             // Fetch Products
-            const { data: productsData, error: productsError } = await supabase
+            const { data: productsData } = await supabase
                 .from('products')
                 .select('*')
                 .eq('store_id', id)
                 .eq('in_stock', true);
 
-            if (productsData) {
-                setProducts(productsData);
+            if (productsData) setProducts(productsData);
+
+            // Fetch Reviews
+            const { data: reviewsData } = await supabase
+                .from('reviews')
+                .select('*, profiles(full_name)')
+                .eq('store_id', id)
+                .order('created_at', { ascending: false });
+
+            if (reviewsData) {
+                setReviews(reviewsData);
+                if (reviewsData.length > 0) {
+                    const avg = reviewsData.reduce((acc, r) => acc + r.rating, 0) / reviewsData.length;
+                    setAverageRating(avg);
+                }
             }
+
             setLoading(false);
         }
 
@@ -52,6 +75,35 @@ export default function StorePage() {
             fetchStoreData();
         }
     }, [id, supabase]);
+
+    const handleSubmitReview = async () => {
+        setSubmittingReview(true);
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            toast("Debes iniciar sesión para calificar", "error");
+            setSubmittingReview(false);
+            return;
+        }
+
+        const { error } = await supabase.from('reviews').insert({
+            order_id: null, // General review
+            user_id: user.id,
+            store_id: id,
+            rating,
+            comment
+        });
+
+        if (error) {
+            toast("Error al enviar reseña: " + error.message, "error");
+        } else {
+            toast("¡Gracias por tu reseña!", "success");
+            setShowReviewModal(false);
+            // Refresh reviews (simple way)
+            window.location.reload();
+        }
+        setSubmittingReview(false);
+    };
 
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-red" /></div>;
@@ -88,8 +140,11 @@ export default function StorePage() {
                         <ArrowLeft className="w-6 h-6" />
                     </Link>
                     <div className="flex gap-2">
-                        <button className="bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-white/30 transition-colors">
-                            <Search className="w-6 h-6" />
+                        <button
+                            onClick={() => setShowReviewModal(true)}
+                            className="bg-white/20 backdrop-blur-md px-3 py-2 rounded-full text-white hover:bg-white/30 transition-colors flex items-center gap-1 text-sm font-bold"
+                        >
+                            <Star className="w-4 h-4" /> Calificar
                         </button>
                     </div>
                 </div>
@@ -99,11 +154,12 @@ export default function StorePage() {
                     <h1 className="text-3xl font-bold mb-1">{store.name}</h1>
                     <div className="flex items-center gap-2 text-sm opacity-90">
                         <span className="bg-brand-yellow text-black px-2 py-0.5 rounded font-bold flex items-center gap-1">
-                            <Star className="w-3 h-3 fill-black" /> 4.8
+                            <Star className="w-3 h-3 fill-black" /> {averageRating > 0 ? averageRating.toFixed(1) : "Nuevo"}
                         </span>
                         <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" /> {distance}
                         </span>
+                        <span className="text-xs opacity-75">({reviews.length} reseñas)</span>
                     </div>
                 </div>
             </div>
@@ -125,7 +181,7 @@ export default function StorePage() {
                 {products.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">Esta tienda aún no tiene productos.</p>
                 ) : (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 mb-8">
                         {products.map((product) => (
                             <ProductCard
                                 key={product.id}
@@ -140,7 +196,71 @@ export default function StorePage() {
                         ))}
                     </div>
                 )}
+
+                {/* Reviews Section */}
+                {reviews.length > 0 && (
+                    <div className="mt-8">
+                        <h2 className="font-bold text-gray-900 mb-4">Reseñas de Clientes</h2>
+                        <div className="space-y-4">
+                            {reviews.map((review) => (
+                                <div key={review.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="font-bold text-sm text-gray-900">Usuario</span>
+                                        <div className="flex items-center gap-0.5">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {review.comment && <p className="text-sm text-gray-600 italic">"{review.comment}"</p>}
+                                    <p className="text-xs text-gray-400 mt-2">{new Date(review.created_at).toLocaleDateString()}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* Review Modal */}
+            {showReviewModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-3xl p-6 animate-in zoom-in-95 relative">
+                        <button onClick={() => setShowReviewModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <X className="w-6 h-6" />
+                        </button>
+                        <h2 className="text-xl font-bold text-gray-900 mb-2 text-center">Calificar Tienda</h2>
+                        <p className="text-gray-500 text-sm text-center mb-6">Comparte tu experiencia con {store.name}</p>
+
+                        <div className="flex justify-center gap-2 mb-6">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    onClick={() => setRating(star)}
+                                    className="transition-transform active:scale-110"
+                                >
+                                    <Star className={`w-8 h-8 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
+                                </button>
+                            ))}
+                        </div>
+
+                        <textarea
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder="Escribe un comentario (opcional)..."
+                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mb-4 text-sm outline-none focus:border-brand-yellow resize-none"
+                            rows={3}
+                        />
+
+                        <button
+                            onClick={handleSubmitReview}
+                            disabled={submittingReview}
+                            className="w-full bg-brand-red text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 active:scale-[0.98] transition-transform"
+                        >
+                            {submittingReview ? "Enviando..." : "Enviar Calificación"}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

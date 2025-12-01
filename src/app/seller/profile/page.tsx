@@ -7,11 +7,17 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getExchangeRate } from "@/lib/utils";
+import MapWrapper from "@/components/map-wrapper";
+import { useToast } from "@/components/ui/toast";
 
 export default function SellerConfigPage() {
+    const { toast } = useToast();
     const [rate, setRate] = useState<string>("");
     const [phone, setPhone] = useState<string>("");
+    const [deliveryFee, setDeliveryFee] = useState<string>("");
+    const [category, setCategory] = useState<string>("otros");
     const [paymentInfo, setPaymentInfo] = useState<string>("");
+    const [isOpen, setIsOpen] = useState(true);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [storeId, setStoreId] = useState<string | null>(null);
@@ -41,7 +47,10 @@ export default function SellerConfigPage() {
 
             if (store) {
                 setPhone(store.phone_number || "");
+                setDeliveryFee(store.delivery_fee?.toString() || "0");
+                setCategory(store.category || "otros");
                 setPaymentInfo(store.payment_info || "");
+                setIsOpen(store.is_open);
                 setStoreId(store.id);
                 setLat(store.lat);
                 setLng(store.lng);
@@ -100,7 +109,10 @@ export default function SellerConfigPage() {
             .update({
                 exchange_rate_bs: parseFloat(rate),
                 phone_number: phone,
+                delivery_fee: parseFloat(deliveryFee) || 0,
+                category: category,
                 payment_info: paymentInfo,
+                is_open: isOpen,
                 lat: lat,
                 lng: lng,
                 image_url: imageUrl
@@ -108,9 +120,9 @@ export default function SellerConfigPage() {
             .eq('id', storeId);
 
         if (error) {
-            alert("Error al guardar: " + error.message);
+            toast("Error al guardar: " + error.message, "error");
         } else {
-            alert("Cambios guardados correctamente");
+            toast("Cambios guardados correctamente", "success");
         }
         setSaving(false);
     };
@@ -127,6 +139,23 @@ export default function SellerConfigPage() {
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
                 <h1 className="text-xl font-bold text-gray-900">Configuración de Tienda</h1>
+            </div>
+
+            {/* Status Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <span className="text-xl">{isOpen ? "🟢" : "🔴"}</span>
+                    <div>
+                        <h2 className="font-bold text-gray-900">Estado de la Tienda</h2>
+                        <p className="text-xs text-gray-500">{isOpen ? "Abierto - Recibiendo pedidos" : "Cerrado - No visible"}</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isOpen ? 'bg-green-500' : 'bg-gray-300'}`}
+                >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isOpen ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
             </div>
 
             {/* Image Upload Card */}
@@ -156,6 +185,25 @@ export default function SellerConfigPage() {
                 </label>
             </div>
 
+            {/* Category Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xl">🏷️</span>
+                    <h2 className="font-bold text-gray-900">Categoría de la Tienda</h2>
+                </div>
+                <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red outline-none"
+                >
+                    <option value="otros">Seleccionar Categoría</option>
+                    <option value="ropa">Ropa</option>
+                    <option value="comida">Comida</option>
+                    <option value="servicios">Servicios</option>
+                    <option value="repuestos">Repuestos</option>
+                </select>
+            </div>
+
             {/* Exchange Rate Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -170,7 +218,7 @@ export default function SellerConfigPage() {
                         readOnly
                         className="w-full text-4xl font-bold text-gray-500 border-b-2 border-gray-100 bg-transparent outline-none py-2 text-center cursor-not-allowed"
                     />
-                    <span className="absolute right-4 bottom-4 text-gray-400 font-medium">Bs. por Dólar ($)</span>
+                    <span className="absolute right-4 bottom-4 text-gray-400 font-medium">Bs. ($)</span>
                 </div>
 
                 <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg font-medium flex items-center gap-2">
@@ -238,6 +286,27 @@ export default function SellerConfigPage() {
                 />
                 <p className="text-xs text-gray-500 mt-2">
                     Formato internacional sin símbolos (Ej: 58...)
+                </p>
+            </div>
+
+            {/* Delivery Fee Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xl">🛵</span>
+                    <h2 className="font-bold text-gray-900">Costo de Delivery</h2>
+                </div>
+                <div className="relative">
+                    <span className="absolute left-4 top-3.5 text-gray-500 font-bold">$</span>
+                    <input
+                        type="number"
+                        value={deliveryFee}
+                        onChange={(e) => setDeliveryFee(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full pl-8 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red outline-none font-bold text-lg"
+                    />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                    Costo fijo de envío en Dólares. Deja en 0 si es gratis o a convenir.
                 </p>
             </div>
 

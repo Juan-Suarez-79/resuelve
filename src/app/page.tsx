@@ -10,11 +10,14 @@ import Link from "next/link";
 
 const CATEGORIES = [
   { id: "all", label: "Todo", icon: "🛍️" },
-  { id: "Comida", label: "Comida", icon: "🍔" },
-  { id: "Ropa", label: "Ropa", icon: "👕" },
-  { id: "Servicios", label: "Servicios", icon: "🔧" },
-  { id: "Repuestos", label: "Repuestos", icon: "⚙️" },
+  { id: "ropa", label: "Ropa", icon: "👕" },
+  { id: "comida", label: "Comida", icon: "🍔" },
+  { id: "servicios", label: "Servicios", icon: "🔧" },
+  { id: "repuestos", label: "Repuestos", icon: "⚙️" },
 ];
+
+import MapWrapper from "@/components/map-wrapper";
+import { X } from "lucide-react";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState("all");
@@ -22,7 +25,11 @@ export default function Home() {
   const [stores, setStores] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { location, loading: geoLoading } = useGeolocation();
+  const { location: geoLoc, loading: geoLoading } = useGeolocation();
+  const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showMap, setShowMap] = useState(false);
+
+  const location = manualLocation || geoLoc;
   const supabase = createClient();
 
   useEffect(() => {
@@ -30,7 +37,7 @@ export default function Home() {
       setLoading(true);
 
       // Fetch Stores
-      let storeQuery = supabase.from('stores').select('*');
+      let storeQuery = supabase.from('stores').select('*').eq('is_open', true);
 
       // Fetch Products
       let productQuery = supabase
@@ -39,10 +46,8 @@ export default function Home() {
 
       // Apply Filters
       if (activeCategory !== "all") {
-        // For products, we filter by category
+        storeQuery = storeQuery.eq('category', activeCategory);
         productQuery = productQuery.eq('category', activeCategory);
-        // For stores, we might filter if stores had categories, but for now we keep all stores or filter by products?
-        // Let's assume stores don't have categories yet in schema, so we just filter products.
       }
 
       if (searchQuery) {
@@ -74,13 +79,14 @@ export default function Home() {
 
     // Debounce search
     const timer = setTimeout(() => {
-      if (!geoLoading) {
+      // Only wait for geoLoading if we don't have a manual location
+      if (manualLocation || !geoLoading) {
         fetchData();
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [supabase, location, geoLoading, activeCategory, searchQuery]);
+  }, [supabase, location, geoLoading, activeCategory, searchQuery, manualLocation]);
 
   return (
     <div className="pb-20">
@@ -88,10 +94,10 @@ export default function Home() {
       <header className="sticky top-0 z-40 bg-white shadow-sm px-4 py-3 space-y-3">
         <div className="flex items-center gap-2 text-gray-700">
           <MapPin className="w-5 h-5 text-brand-red" />
-          <div className="flex-1">
+          <div className="flex-1" onClick={() => setShowMap(true)}>
             <p className="text-xs text-gray-500">Ubicación</p>
-            <div className="flex items-center gap-1 font-semibold text-sm cursor-pointer">
-              {location ? "Ubicación Actual" : "Seleccionar Ubicación"}
+            <div className="flex items-center gap-1 font-semibold text-sm cursor-pointer hover:text-brand-red transition-colors">
+              {manualLocation ? "Ubicación Seleccionada" : (location ? "Ubicación Actual" : "Seleccionar Ubicación")}
               <ChevronDown className="w-4 h-4" />
             </div>
           </div>
@@ -141,7 +147,10 @@ export default function Home() {
           {/* Featured Stores (Only show if no search or matches search) */}
           {stores.length > 0 && (
             <section className="px-4 mb-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-3">Tiendas</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold text-gray-900">Tiendas Cercanas</h2>
+                {location && <span className="text-xs text-brand-red font-medium">Ordenadas por distancia</span>}
+              </div>
               <div className="space-y-4">
                 {stores.map((store) => (
                   <Link key={store.id} href={`/store/${store.id}`}>
@@ -149,9 +158,9 @@ export default function Home() {
                       name={store.name}
                       rating={4.8}
                       distance={store.distanceVal ? `${store.distanceVal.toFixed(1)} km` : "N/A"}
-                      deliveryPrice={3}
+                      deliveryPrice={store.delivery_fee || 0}
                       imageUrl={store.image_url}
-                      category="General"
+                      category={store.category || "General"}
                     />
                   </Link>
                 ))}
@@ -184,6 +193,35 @@ export default function Home() {
             )}
           </section>
         </>
+      )}
+
+      {/* Map Modal */}
+      {showMap && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="p-4 flex justify-between items-center border-b border-gray-100">
+              <h3 className="font-bold text-gray-900">Selecciona tu ubicación</h3>
+              <button onClick={() => setShowMap(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="h-[400px] relative">
+              <MapWrapper
+                initialLat={location?.lat}
+                initialLng={location?.lng}
+                onLocationSelect={(lat, lng) => {
+                  setManualLocation({ lat, lng });
+                  setShowMap(false);
+                }}
+              />
+              <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+                <span className="bg-white/90 px-3 py-1 rounded-full text-xs font-medium shadow-sm text-gray-600">
+                  Toca el mapa para seleccionar
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

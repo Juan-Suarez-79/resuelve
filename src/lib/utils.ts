@@ -14,8 +14,9 @@ export function formatCurrency(amount: number, currency: 'USD' | 'VES') {
 }
 
 export function generateWhatsAppLink(phone: string, message: string) {
+    const cleanPhone = phone.replace(/\D/g, '');
     const encodedMessage = encodeURIComponent(message);
-    return `https://wa.me/${phone}?text=${encodedMessage}`;
+    return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
 }
 
 export async function getExchangeRate(): Promise<number> {

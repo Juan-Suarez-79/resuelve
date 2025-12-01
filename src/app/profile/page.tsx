@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { User, LogOut, ShoppingBag, MapPin, Loader2, ArrowLeft } from "lucide-react";
+import { User, LogOut, ShoppingBag, MapPin, Loader2, ArrowLeft, Heart } from "lucide-react";
 import Link from "next/link";
 
 import { Store } from "lucide-react";
@@ -101,6 +101,16 @@ export default function ProfilePage() {
                     <div className="flex-1">
                         <h3 className="font-bold text-gray-900">Mis Direcciones</h3>
                         <p className="text-xs text-gray-500">Gestionar direcciones de entrega</p>
+                    </div>
+                </Link>
+
+                <Link href="/profile/favorites" className="w-full flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 active:scale-[0.98] transition-transform text-left">
+                    <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center">
+                        <Heart className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-bold text-gray-900">Mis Favoritos</h3>
+                        <p className="text-xs text-gray-500">Productos que te gustan</p>
                     </div>
                 </Link>
             </div>

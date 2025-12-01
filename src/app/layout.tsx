@@ -19,20 +19,24 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+import { ToastProvider } from "@/components/ui/toast";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 pb-20`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 pb-16 md:pb-0`}
       >
-        <main className="min-h-screen max-w-md mx-auto bg-white shadow-xl overflow-hidden relative">
-          {children}
-          <BottomNav />
-        </main>
+        <ToastProvider>
+          <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden">
+            {children}
+            <BottomNav />
+          </div>
+        </ToastProvider>
       </body>
     </html>
   );

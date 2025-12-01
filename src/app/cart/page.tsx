@@ -12,33 +12,58 @@ import { createClient } from "@/lib/supabase/client";
 export default function CartPage() {
     const { items, removeItem, updateQuantity, totalUsd, clearCart } = useCart();
     const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
     const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
     const [paymentMethod, setPaymentMethod] = useState<string>('');
     const [storePaymentMethods, setStorePaymentMethods] = useState<any[]>([]);
     const [loadingMethods, setLoadingMethods] = useState(false);
     const [exchangeRate, setExchangeRate] = useState(0);
+    const [deliveryFee, setDeliveryFee] = useState(0);
+    const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
 
     const supabase = createClient();
     const subtotal = totalUsd();
-    const deliveryFee = deliveryMethod === 'delivery' ? 2.00 : 0;
-    const total = subtotal + deliveryFee;
+    const finalDeliveryFee = deliveryMethod === 'delivery' ? deliveryFee : 0;
+    const total = subtotal + finalDeliveryFee;
 
-    // Fetch payment methods and exchange rate
+    // Fetch payment methods, exchange rate, delivery fee, and saved addresses
     useEffect(() => {
         const init = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
             const rate = await getExchangeRate();
             setExchangeRate(rate);
+
+            if (user) {
+                // Fetch Saved Addresses
+                const { data: addresses } = await supabase
+                    .from('addresses')
+                    .select('*')
+                    .eq('user_id', user.id);
+                if (addresses) setSavedAddresses(addresses);
+            }
 
             if (items.length > 0) {
                 const firstStoreId = items[0].storeId;
                 setLoadingMethods(true);
-                const { data } = await supabase
+
+                // Fetch Payment Methods
+                const { data: methods } = await supabase
                     .from('payment_methods')
                     .select('*')
                     .eq('store_id', firstStoreId);
 
-                if (data) setStorePaymentMethods(data);
+                if (methods) setStorePaymentMethods(methods);
+
+                // Fetch Store Delivery Fee
+                const { data: store } = await supabase
+                    .from('stores')
+                    .select('delivery_fee')
+                    .eq('id', firstStoreId)
+                    .single();
+
+                if (store) setDeliveryFee(store.delivery_fee || 0);
+
                 setLoadingMethods(false);
             }
         };
@@ -50,6 +75,10 @@ export default function CartPage() {
 
         if (!name) {
             alert("Por favor ingresa tu nombre.");
+            return;
+        }
+        if (!phone) {
+            alert("Por favor ingresa tu teléfono.");
             return;
         }
         if (deliveryMethod === 'delivery' && !address) {
@@ -81,6 +110,7 @@ export default function CartPage() {
             const orderPayload = {
                 store_id: storeId,
                 buyer_name: name,
+                buyer_phone: phone,
                 buyer_address: deliveryMethod === 'delivery' ? address : 'Pick Up',
                 buyer_id: user?.id || null,
                 total_usd: storeTotalUsd,
@@ -128,9 +158,15 @@ export default function CartPage() {
                     .map((item) => "- " + item.quantity + "x " + item.title + " ($" + item.priceUsd + ")")
                     .join("\n");
 
-                let message = "*Hola, quiero procesar el siguiente pedido:*\n\n" + itemsList + "\n\n*Total: $" + storeTotalUsd.toFixed(2) + "*\n\n";
+                const paymentLabel = paymentMethod === 'pago_movil' ? 'Pago Móvil' :
+                    paymentMethod === 'zelle' ? 'Zelle' :
+                        paymentMethod === 'binance' ? 'Binance' : 'Efectivo';
 
-                message += "*Método de pago seleccionado:* " + paymentMethod.toUpperCase() + "\n";
+                const storeTotalBs = storeTotalUsd * exchangeRate;
+                let message = "*Hola, quiero procesar el siguiente pedido:*\n\n" + itemsList + "\n\n";
+                message += `*Total: $${storeTotalUsd.toFixed(2)} / Bs ${storeTotalBs.toFixed(2)}*\n\n`;
+
+                message += "*Método de pago:* " + paymentLabel + "\n";
 
                 if (['zelle', 'pago_movil', 'binance'].includes(paymentMethod)) {
                     message += "Adjunto captura del pago en un momento.\n";
@@ -139,7 +175,8 @@ export default function CartPage() {
                 message += "*Método de entrega:* " + (deliveryMethod === 'delivery' ? 'Delivery' : 'Pick Up') + "\n";
 
                 if (deliveryMethod === 'delivery') {
-                    message += "Mi dirección de entrega es: " + address;
+                    message += "Adjunto mi ubicación en un momento.\n";
+                    message += "Mi dirección escrita es: " + address;
                 } else {
                     message += "Por favor envíame la ubicación para retirar.";
                 }
@@ -214,6 +251,14 @@ export default function CartPage() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Ej: Juan Pérez"
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-red outline-none bg-gray-50 mb-3"
+                        />
+                        <label className="block text-xs font-bold text-gray-500 mb-1">Teléfono</label>
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="Ej: 04121234567"
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-red outline-none bg-gray-50"
                         />
                     </div>
@@ -242,6 +287,22 @@ export default function CartPage() {
 
                     {deliveryMethod === 'delivery' && (
                         <div className="animate-in fade-in slide-in-from-top-2">
+                            {savedAddresses.length > 0 && (
+                                <div className="mb-3">
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Mis Direcciones Guardadas</label>
+                                    <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                        {savedAddresses.map((addr) => (
+                                            <button
+                                                key={addr.id}
+                                                onClick={() => setAddress(addr.address)}
+                                                className={`flex-shrink-0 px-4 py-2 rounded-lg text-xs font-medium border transition-colors ${address === addr.address ? 'bg-red-50 border-brand-red text-brand-red' : 'bg-white border-gray-200 text-gray-600'}`}
+                                            >
+                                                {addr.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             <label className="block text-xs font-bold text-gray-500 mb-1">Dirección Exacta</label>
                             <textarea
                                 value={address}

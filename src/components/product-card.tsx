@@ -1,9 +1,9 @@
-"use client";
-
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { Plus, Heart } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/lib/store/cart";
+import { createClient } from "@/lib/supabase/client";
 
 interface ProductCardProps {
     id: string;
@@ -25,7 +25,33 @@ export function ProductCard({
     storeId,
 }: ProductCardProps) {
     const addItem = useCart((state) => state.addItem);
+    const [isFavorite, setIsFavorite] = useState(false);
+    const supabase = createClient();
     const priceBs = priceUsd * exchangeRate;
+
+    useEffect(() => {
+        checkFavorite();
+    }, []);
+
+    const checkFavorite = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase.from('favorites').select('*').eq('user_id', user.id).eq('product_id', id).single();
+        if (data) setIsFavorite(true);
+    };
+
+    const toggleFavorite = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        if (isFavorite) {
+            await supabase.from('favorites').delete().eq('user_id', user.id).eq('product_id', id);
+            setIsFavorite(false);
+        } else {
+            await supabase.from('favorites').insert({ user_id: user.id, product_id: id });
+            setIsFavorite(true);
+        }
+    };
 
     const handleAddToCart = () => {
         addItem({
@@ -40,7 +66,13 @@ export function ProductCard({
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full relative group">
+            <button
+                onClick={toggleFavorite}
+                className="absolute top-2 right-2 z-10 bg-white/80 backdrop-blur-sm p-1.5 rounded-full shadow-sm active:scale-90 transition-transform"
+            >
+                <Heart className={`w-4 h-4 ${isFavorite ? 'fill-brand-red text-brand-red' : 'text-gray-400'}`} />
+            </button>
             <div className="relative aspect-square w-full bg-gray-100">
                 {imageUrl ? (
                     <Image
