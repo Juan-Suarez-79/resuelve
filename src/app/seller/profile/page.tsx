@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Loader2, Save } from "lucide-react";
+import { ArrowLeft, MapPin, Loader2, Save, Camera } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import MapWrapper from "@/components/map-wrapper";
+import Image from "next/image";
 
 export default function SellerConfigPage() {
     const [rate, setRate] = useState<string>("");
@@ -17,6 +18,8 @@ export default function SellerConfigPage() {
     const [lat, setLat] = useState<number | null>(null);
     const [lng, setLng] = useState<number | null>(null);
     const [showMap, setShowMap] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const supabase = createClient();
     const router = useRouter();
@@ -42,15 +45,50 @@ export default function SellerConfigPage() {
                 setStoreId(store.id);
                 setLat(store.lat);
                 setLng(store.lng);
+                if (store.image_url) setImagePreview(store.image_url);
             }
             setLoading(false);
         }
         fetchStore();
     }, [supabase, router]);
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                alert("La imagen es muy pesada. Máximo 5MB.");
+                return;
+            }
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
     const handleSave = async () => {
         if (!storeId) return;
         setSaving(true);
+
+        let imageUrl = imagePreview;
+
+        if (imageFile) {
+            const fileExt = imageFile.name.split('.').pop();
+            const fileName = `store-logo-${storeId}-${Math.random()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('products') // Reusing products bucket
+                .upload(fileName, imageFile);
+
+            if (uploadError) {
+                alert("Error subiendo imagen: " + uploadError.message);
+                setSaving(false);
+                return;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('products')
+                .getPublicUrl(fileName);
+
+            imageUrl = publicUrl;
+        }
 
         const { error } = await supabase
             .from('stores')
@@ -59,7 +97,8 @@ export default function SellerConfigPage() {
                 phone_number: phone,
                 payment_info: paymentInfo,
                 lat: lat,
-                lng: lng
+                lng: lng,
+                image_url: imageUrl
             })
             .eq('id', storeId);
 
@@ -83,6 +122,33 @@ export default function SellerConfigPage() {
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
                 <h1 className="text-xl font-bold text-gray-900">Configuración de Tienda</h1>
+            </div>
+
+            {/* Image Upload Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                    <Camera className="w-5 h-5 text-gray-900" />
+                    <h2 className="font-bold text-gray-900">Logo / Foto de Portada</h2>
+                </div>
+
+                <label className="block">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+                    />
+                    <div className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 h-40 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors relative overflow-hidden">
+                        {imagePreview ? (
+                            <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                        ) : (
+                            <>
+                                <Camera className="w-8 h-8 text-gray-400 mb-2" />
+                                <span className="text-gray-500 text-sm">Toca para subir foto</span>
+                            </>
+                        )}
+                    </div>
+                </label>
             </div>
 
             {/* Exchange Rate Card */}
