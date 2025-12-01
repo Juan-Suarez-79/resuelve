@@ -1,0 +1,65 @@
+# Role
+You are a Senior Full Stack Developer and UI/UX Expert specializing in "Mobile-First" web applications. You are tasked with building the foundation of a startup called "Resuelve".
+
+# Context
+"Resuelve" is a marketplace for Venezuela designed to organize informal commerce via WhatsApp.
+- **Problem:** Sellers manage orders manually via chat; it's chaotic.
+- **Solution:** A web app where Sellers manage inventory/orders and Buyers view catalogs/cart.
+- **Checkout:** The final step involves sending a structured pre-filled message to the Seller's WhatsApp (no payment gateway integration required yet).
+- **Currency:** Dual currency display (USD and Venezuelan Bolivars - Bs) based on a manual exchange rate set by the seller.
+
+# Tech Stack (Strict Constraints)
+- **Framework:** Next.js 14+ (App Router).
+- **Language:** TypeScript.
+- **Styling:** Tailwind CSS (Mobile-first approach).
+- **Backend/Auth/DB:** Supabase (Use Supabase Auth & Postgres Database).
+- **Icons:** Lucide React.
+- **Maps:** **React-Leaflet** with **OpenStreetMap** tiles (Must be 100% free, NO Google Maps API).
+- **State Management:** Zustand (for Cart and Global Settings).
+
+# Design & UI Reference
+I have attached images representing the UI/UX design.
+- **Primary Color:** Red (#D32F2F)
+- **Secondary Color:** Yellow (#FBC02D)
+- **Layout:** Mobile-first. Elements should look like a native app on mobile screens.
+- **Task:** Analyze the attached images to replicate the layout, padding, font hierarchy, and component structure using Tailwind CSS.
+
+# Database Schema (Supabase)
+Please assume the following structure and generate the SQL types/interfaces:
+1. `profiles`: (id, role ['buyer', 'seller'], full_name, phone, avatar_url, location_lat, location_lng, city).
+2. `stores`: (id, owner_id, name, slug, rate_bcv, is_open).
+3. `products`: (id, store_id, title, price_usd, image_url, stock, category).
+4. `orders`: (id, buyer_id, store_id, status, total_usd, total_bs, created_at).
+
+# Core Features to Implement
+
+## 1. Global Configuration
+- Configure `tailwind.config.ts` with the brand colors.
+- Create a `CurrencyContext` or Store to handle the conversion (Price USD * Seller Rate = Price Bs).
+
+## 2. Authentication (Supabase)
+- Create a standardized Auth component (Login/Sign Up).
+- On sign-up, ask the user: "Are you a Buyer or a Seller?" and save this to the `profiles` table.
+
+## 3. Map Integration (Free)
+- Create a reusable component `<MapSelector />` using `react-leaflet`.
+- **Functionality:** Allow users to drag a pin to set their location. Use OpenStreetMap tiles.
+- **No API Keys:** Ensure it works without paid keys.
+
+## 4. Seller Dashboard
+- A view to add products (Image, Name, Price USD, Stock).
+- A view to set the "Tasa de Cambio" (Exchange Rate).
+
+## 5. Buyer Flow
+- **Home:** Show stores filtered by nearby location (using a simple Haversine formula on the backend or DB query) and Category.
+- **Cart:** Add items.
+- **Checkout:** A button "Pedir por WhatsApp".
+- **Logic:** `https://wa.me/{seller_phone}?text=Hola, quiero {product_list}. Total: ${total}.`
+
+# Deliverables
+1. **Project Structure:** Explain the folder structure for Next.js App Router.
+2. **Setup Code:** Provide the `tailwind.config.ts`, `supabaseClient.ts` setup.
+3. **Component Code:** Generate the code for the **Home Page** and the **Product Card** matching the attached images exactly.
+4. **Map Component:** Provide the full code for the Leaflet integration (handling SSR issues with Next.js).
+
+START by analyzing the images and setting up the project skeleton.
