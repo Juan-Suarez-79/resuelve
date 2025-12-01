@@ -4,8 +4,10 @@ import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import { Loader2, ArrowLeft, Mail, Lock, User, Phone, MapPin } from "lucide-react";
 import { WavyBackground } from "@/components/ui/wavy-background";
+import { MotionWrapper } from "@/components/ui/motion-wrapper";
 import { cn } from "@/lib/utils";
 
 function SignupForm() {
@@ -15,6 +17,8 @@ function SignupForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [fullName, setFullName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [address, setAddress] = useState("");
     const [role, setRole] = useState<"buyer" | "seller">(initialRole);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -32,9 +36,11 @@ function SignupForm() {
             options: {
                 data: {
                     full_name: fullName,
-                    role: role,
-                },
-            },
+                    phone: phone,
+                    address: address,
+                    role: role
+                }
+            }
         });
 
         if (authError) {
@@ -44,30 +50,42 @@ function SignupForm() {
         }
 
         if (authData.user) {
-            // Profile and Store are created automatically by the Supabase Trigger
-            if (role === 'seller') {
-                router.push('/seller');
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                    id: authData.user.id,
+                    full_name: fullName,
+                    role: role,
+                    phone: phone,
+                    address: address
+                });
+
+            if (profileError) {
+                setError("Error creando perfil: " + profileError.message);
+                setLoading(false);
             } else {
-                router.push('/');
+                router.push('/welcome');
             }
         }
-        setLoading(false);
     };
 
     return (
-        <div className="relative z-10 w-full max-w-sm">
-            <Link href="/welcome" className="inline-flex items-center text-gray-500 mb-6 hover:text-brand-red transition-colors">
-                <ArrowLeft className="w-5 h-5 mr-1" /> Volver
+        <MotionWrapper className="relative z-10 w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 my-10">
+            <Link href="/welcome" className="inline-flex items-center text-gray-500 mb-6 hover:text-brand-red transition-colors group">
+                <ArrowLeft className="w-5 h-5 mr-1 group-hover:-translate-x-1 transition-transform" /> Volver
             </Link>
 
-            <div className="text-center mb-6">
-                <h1 className="text-4xl font-bold text-brand-red mb-2">Crear Cuenta</h1>
-                <p className="text-gray-600">Únete a Resuelve</p>
+            <div className="text-center mb-8 flex flex-col items-center">
+                <div className="relative w-20 h-20 mb-4 shadow-lg rounded-2xl overflow-hidden">
+                    <Image src="/logo.jpg" alt="Resuelve" fill className="object-cover" />
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">Crear Cuenta</h1>
+                <p className="text-gray-500 font-medium">Únete a la comunidad de Resuelve</p>
             </div>
 
             {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-4 border border-red-100">
-                    {error}
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm mb-6 border border-red-100 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                    <span className="font-bold">Error:</span> {error}
                 </div>
             )}
 
@@ -80,8 +98,8 @@ function SignupForm() {
                         className={cn(
                             "p-3 rounded-xl border-2 transition-all font-bold text-sm",
                             role === "buyer"
-                                ? "border-brand-red bg-red-50 text-brand-red"
-                                : "border-gray-200 text-gray-500 bg-white hover:border-gray-300"
+                                ? "border-brand-red bg-red-50 text-brand-red shadow-sm"
+                                : "border-gray-200 text-gray-500 bg-white hover:border-gray-300 hover:bg-gray-50"
                         )}
                     >
                         Comprador
@@ -92,56 +110,92 @@ function SignupForm() {
                         className={cn(
                             "p-3 rounded-xl border-2 transition-all font-bold text-sm",
                             role === "seller"
-                                ? "border-brand-yellow bg-yellow-50 text-yellow-800 border-brand-yellow"
-                                : "border-gray-200 text-gray-500 bg-white hover:border-gray-300"
+                                ? "border-brand-yellow bg-yellow-50 text-yellow-800 border-brand-yellow shadow-sm"
+                                : "border-gray-200 text-gray-500 bg-white hover:border-gray-300 hover:bg-gray-50"
                         )}
                     >
                         Vendedor
                     </button>
                 </div>
 
-                <div>
+                <div className="relative group">
+                    <User className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
                     <input
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
                         placeholder="Nombre Completo"
-                        className="w-full px-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-1 focus:ring-brand-red outline-none transition-all placeholder:text-gray-400"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
                     />
                 </div>
-                <div>
+                <div className="relative group">
+                    <Mail className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
                     <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="Correo Electrónico"
-                        className="w-full px-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-1 focus:ring-brand-red outline-none transition-all placeholder:text-gray-400"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
                     />
                 </div>
-                <div>
+                <div className="relative group">
+                    <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
                     <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        minLength={6}
                         placeholder="Contraseña"
-                        className="w-full px-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-1 focus:ring-brand-red outline-none transition-all placeholder:text-gray-400"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
                     />
+                </div>
+                <div className="relative group">
+                    <Phone className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
+                    <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required
+                        placeholder="Teléfono"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
+                    />
+                </div>
+                <div className="relative group">
+                    <MapPin className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
+                    <input
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        required
+                        placeholder="Dirección"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
+                    />
+                </div>
+
+                <div className="flex items-start gap-2 mb-4 pt-2">
+                    <input
+                        type="checkbox"
+                        id="terms"
+                        required
+                        className="mt-1 w-4 h-4 text-brand-red border-gray-300 rounded focus:ring-brand-red"
+                    />
+                    <label htmlFor="terms" className="text-sm text-gray-600 leading-tight">
+                        Acepto los <Link href="/terms" className="text-brand-red font-bold hover:underline" target="_blank">Términos y Condiciones</Link> y la <Link href="/privacy" className="text-brand-red font-bold hover:underline" target="_blank">Política de Privacidad</Link>.
+                    </label>
                 </div>
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-brand-red text-white py-4 rounded-xl font-bold shadow-lg shadow-red-200 active:scale-[0.98] transition-all flex items-center justify-center text-lg"
+                    className="w-full bg-brand-red text-white py-4 rounded-xl font-bold shadow-lg shadow-red-200 active:scale-[0.98] hover:bg-red-700 transition-all flex items-center justify-center text-lg"
                 >
                     {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Registrarse"}
                 </button>
             </form>
 
-            <div className="mt-8 text-center text-sm">
+            <div className="mt-6 text-center text-sm">
                 <p className="text-gray-600">
                     ¿Ya tienes cuenta?{" "}
                     <Link href="/login" className="text-brand-red font-bold hover:underline">
@@ -149,17 +203,16 @@ function SignupForm() {
                     </Link>
                 </p>
             </div>
-        </div>
+        </MotionWrapper>
     );
 }
 
 export default function SignupPage() {
     return (
-        <div className="min-h-screen bg-white relative overflow-hidden flex flex-col items-center justify-center p-6">
-            <WavyBackground />
+        <WavyBackground className="max-w-4xl mx-auto pb-40">
             <Suspense fallback={<div className="flex justify-center"><Loader2 className="animate-spin text-brand-red" /></div>}>
                 <SignupForm />
             </Suspense>
-        </div>
+        </WavyBackground>
     );
 }

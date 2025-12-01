@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { WavyBackground } from "@/components/ui/wavy-background";
 
 export default function WelcomePage() {
@@ -9,10 +10,10 @@ export default function WelcomePage() {
             <WavyBackground />
 
             <div className="relative z-10 w-full max-w-sm text-center flex flex-col items-center">
-                {/* Logo Text */}
-                <h1 className="text-5xl font-bold text-brand-red mb-2 tracking-tight">
-                    Resuelve
-                </h1>
+                {/* Logo */}
+                <div className="mb-6 relative w-40 h-40">
+                    <Image src="/logo.jpg" alt="Resuelve Logo" fill className="object-contain rounded-2xl" priority />
+                </div>
 
                 {/* Tagline */}
                 <p className="text-gray-800 font-medium text-lg mb-12 leading-tight">

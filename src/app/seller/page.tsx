@@ -6,6 +6,7 @@ import { Loader2, Plus, DollarSign, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { MotionWrapper } from "@/components/ui/motion-wrapper";
 
 interface Order {
     id: string;
@@ -42,7 +43,7 @@ export default function SellerDashboard() {
                     .single();
 
                 if (!store) {
-                    setLoading(false);
+                    router.push('/seller/profile');
                     return;
                 }
 
@@ -92,98 +93,125 @@ export default function SellerDashboard() {
     };
 
     return (
-        <div className="p-4 pb-24 bg-gray-50 min-h-screen">
-            {/* Header */}
-            <div className="mb-6 flex justify-between items-end">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Hola,</h1>
-                    <h1 className="text-3xl font-bold text-gray-900">Vendedor!</h1>
+        <div className="min-h-screen bg-gray-50 pb-24">
+            <MotionWrapper className="p-4 max-w-lg mx-auto">
+                {/* Header */}
+                <div className="mb-8 flex justify-between items-end">
+                    <div>
+                        <h1 className="text-4xl font-black text-gray-900 tracking-tight">Hola,</h1>
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-red to-red-600">Vendedor!</h1>
+                    </div>
+                    <div className="text-right bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total Pedidos</p>
+                        <p className="text-2xl font-black text-gray-900">{totalOrders}</p>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-xs text-gray-500">Total Pedidos</p>
-                    <p className="text-xl font-bold text-gray-900">{totalOrders}</p>
-                </div>
-            </div>
 
-            {/* Metrics Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-                <Link href="/seller/earnings" className="bg-brand-red p-5 rounded-3xl text-white shadow-lg shadow-red-200 active:scale-[0.98] transition-transform">
-                    <div className="flex items-center gap-2 mb-2 opacity-90">
-                        <DollarSign className="w-5 h-5" />
-                        <span className="text-sm font-medium">Ventas Hoy</span>
-                    </div>
-                    <p className="text-3xl font-bold">{formatCurrency(salesToday, 'USD')}</p>
-                    <div className="mt-2 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg">
-                        Ver Reporte Completo →
-                    </div>
-                </Link>
-
-                <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-2 mb-2 text-gray-500">
-                        <ShoppingBag className="w-5 h-5" />
-                        <span className="text-sm font-medium">Pendientes</span>
-                    </div>
-                    <p className="text-3xl font-bold text-gray-900">{pendingCount}</p>
-                </div>
-            </div>
-
-            {/* Recent Orders */}
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900">Pedidos Recientes</h2>
-                <Link href="/seller/orders" className="text-sm text-brand-red font-bold">Ver todos</Link>
-            </div>
-
-            <div className="space-y-4">
-                {orders.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500 bg-white rounded-2xl border border-dashed border-gray-200">
-                        No tienes pedidos aún.
-                    </div>
-                ) : (
-                    orders.slice(0, 5).map((order) => (
-                        <div key={order.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                            <div className="flex justify-between items-start mb-2">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-gray-900">#{order.id.slice(0, 4)}</h3>
-                                        <span className="text-gray-400 text-xs">• {order.buyer_name}</span>
-                                    </div>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        {order.order_items.length} items • <span className="font-bold text-gray-900">{formatCurrency(order.total_usd, 'USD')}</span>
-                                    </p>
+                {/* Metrics Cards */}
+                <div className="grid grid-cols-2 gap-4 mb-10">
+                    <Link href="/seller/earnings" className="bg-gradient-to-br from-brand-red to-red-700 p-6 rounded-[2rem] text-white shadow-xl shadow-red-200 active:scale-[0.98] hover:scale-[1.02] transition-all group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <DollarSign className="w-24 h-24" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3 opacity-90">
+                                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                                    <DollarSign className="w-5 h-5" />
                                 </div>
-                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    order.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                        order.status === 'delivered' ? 'bg-blue-100 text-blue-800' :
-                                            'bg-gray-100 text-gray-800'
-                                    }`}>
-                                    {order.status === 'pending' ? 'Pendiente' :
-                                        order.status === 'paid' ? 'Pagado' :
-                                            order.status === 'delivered' ? 'Entregado' : order.status}
-                                </span>
+                                <span className="text-sm font-bold">Ventas Hoy</span>
                             </div>
-
-                            <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-50">
-                                <span className="text-xs text-gray-400 font-medium">
-                                    {getTimeAgo(order.created_at)}
-                                </span>
-                                <Link
-                                    href={`/seller/orders/${order.id}`}
-                                    className="text-brand-red text-sm font-bold hover:underline"
-                                >
-                                    Ver Detalles
-                                </Link>
+                            <p className="text-2xl font-black tracking-tight mb-4">{formatCurrency(salesToday, 'USD')}</p>
+                            <div className="text-[10px] font-bold bg-white/20 inline-flex items-center gap-1 px-3 py-1.5 rounded-full backdrop-blur-md group-hover:bg-white/30 transition-colors">
+                                Ver Reporte <span className="text-lg leading-none">→</span>
                             </div>
                         </div>
-                    ))
-                )}
-            </div>
+                    </Link>
+
+                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
+                            <ShoppingBag className="w-24 h-24" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3 text-gray-500">
+                                <div className="p-2 bg-gray-100 rounded-xl">
+                                    <ShoppingBag className="w-5 h-5 text-gray-600" />
+                                </div>
+                                <span className="text-sm font-bold">Pendientes</span>
+                            </div>
+                            <p className="text-3xl font-black text-gray-900">{pendingCount}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Recent Orders */}
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        Pedidos Recientes
+                        <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{orders.length}</span>
+                    </h2>
+                    <Link href="/seller/orders" className="text-sm text-brand-red font-bold hover:bg-red-50 px-3 py-1.5 rounded-full transition-colors">Ver todos</Link>
+                </div>
+
+                <div className="space-y-4">
+                    {orders.length === 0 ? (
+                        <div className="text-center py-12 text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 flex flex-col items-center gap-3">
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                                <ShoppingBag className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <p className="font-medium">No tienes pedidos aún.</p>
+                        </div>
+                    ) : (
+                        orders.slice(0, 5).map((order) => (
+                            <Link href={`/seller/orders/${order.id}`} key={order.id} className="block bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md hover:scale-[1.01] transition-all group">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg text-xs font-bold font-mono">#{order.id.slice(0, 4)}</span>
+                                            <span className="text-gray-400 text-xs font-medium">• {getTimeAgo(order.created_at)}</span>
+                                        </div>
+                                        <h3 className="font-bold text-gray-900 group-hover:text-brand-red transition-colors">{order.buyer_name}</h3>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wide shadow-sm ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                                        order.status === 'paid' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                            order.status === 'delivered' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                                'bg-gray-100 text-gray-800 border border-gray-200'
+                                        }`}>
+                                        {order.status === 'pending' ? 'Pendiente' :
+                                            order.status === 'paid' ? 'Pagado' :
+                                                order.status === 'delivered' ? 'Entregado' : order.status}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between items-end pt-3 border-t border-gray-50">
+                                    <div className="flex -space-x-2 overflow-hidden">
+                                        {order.order_items.slice(0, 3).map((item, i) => (
+                                            <div key={i} className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-500" title={item.title}>
+                                                {item.title.charAt(0)}
+                                            </div>
+                                        ))}
+                                        {order.order_items.length > 3 && (
+                                            <div className="w-8 h-8 rounded-full bg-gray-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                                +{order.order_items.length - 3}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-400 font-medium mb-0.5">Total</p>
+                                        <p className="text-lg font-black text-gray-900 leading-none">{formatCurrency(order.total_usd, 'USD')}</p>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))
+                    )}
+                </div>
+            </MotionWrapper>
 
             {/* Floating Action Button */}
             <Link
                 href="/seller/products/new"
-                className="fixed bottom-24 right-6 w-14 h-14 bg-brand-red text-white rounded-full shadow-xl shadow-red-200 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50"
+                className="fixed bottom-24 right-6 w-16 h-16 bg-brand-red text-white rounded-full shadow-xl shadow-red-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-50 group"
             >
-                <Plus className="w-8 h-8" />
+                <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
             </Link>
         </div>
     );

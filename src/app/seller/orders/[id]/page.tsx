@@ -21,6 +21,8 @@ interface Order {
     order_items: { quantity: number; title: string; price_at_time_usd: number }[];
 }
 
+import { useToast } from "@/components/ui/toast";
+
 export default function OrderDetailsPage() {
     const { id } = useParams();
     const [order, setOrder] = useState<Order | null>(null);
@@ -28,6 +30,7 @@ export default function OrderDetailsPage() {
     const [updating, setUpdating] = useState(false);
     const supabase = createClient();
     const router = useRouter();
+    const { toast } = useToast();
 
     useEffect(() => {
         async function fetchOrder() {
@@ -58,9 +61,10 @@ export default function OrderDetailsPage() {
             .eq('id', id);
 
         if (error) {
-            alert("Error actualizando estado");
+            toast("Error actualizando estado", "error");
         } else {
             setOrder(prev => prev ? { ...prev, status: newStatus as any } : null);
+            toast("Estado actualizado correctamente", "success");
         }
         setUpdating(false);
     };

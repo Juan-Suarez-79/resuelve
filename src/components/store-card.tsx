@@ -21,37 +21,48 @@ export function StoreCard({
     category,
 }: StoreCardProps) {
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
-            <div className="relative h-32 w-full bg-gray-100">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1 group">
+            <div className="relative h-40 w-full bg-gray-100 overflow-hidden">
                 {imageUrl ? (
                     <Image
                         src={imageUrl}
                         alt={name}
                         fill
-                        className="object-cover"
+                        className="object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                 ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400">
-                        No Image
+                    <div className="flex items-center justify-center h-full text-gray-400 bg-gray-50">
+                        <span className="text-sm font-medium">Sin Imagen</span>
                     </div>
                 )}
-                <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 text-xs font-medium shadow-sm">
-                    <Star className="w-3 h-3 text-brand-yellow fill-brand-yellow" />
-                    {rating}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+
+                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-sm">
+                    <Star className="w-3.5 h-3.5 text-brand-yellow fill-brand-yellow" />
+                    {rating > 0 ? rating.toFixed(1) : "Nuevo"}
                 </div>
-            </div>
-            <div className="p-3">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h3 className="font-bold text-gray-900">{name}</h3>
-                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {distance} • Delivery: ${deliveryPrice}
-                        </p>
-                    </div>
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+
+                <div className="absolute bottom-3 left-3 text-white">
+                    <span className="text-xs font-bold bg-brand-red/90 backdrop-blur-md px-2.5 py-1 rounded-lg shadow-sm">
                         {category}
                     </span>
+                </div>
+            </div>
+            <div className="p-4">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-brand-red transition-colors">{name}</h3>
+                        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 font-medium">
+                            <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                <MapPin className="w-3.5 h-3.5 text-brand-red" />
+                                {distance}
+                            </span>
+                            <span className="text-gray-300">•</span>
+                            <span className="text-green-600 font-bold bg-green-50 px-2 py-1 rounded-md">
+                                ${deliveryPrice} Delivery
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

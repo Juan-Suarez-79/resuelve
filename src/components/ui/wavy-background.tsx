@@ -1,45 +1,132 @@
-export function WavyBackground() {
+"use client";
+import { cn } from "@/lib/utils";
+import React, { useEffect, useRef, useState } from "react";
+import { createNoise3D } from "simplex-noise";
+
+export const WavyBackground = ({
+    children,
+    className,
+    containerClassName,
+    colors,
+    waveWidth,
+    backgroundFill,
+    blur = 10,
+    speed = "fast",
+    waveOpacity = 0.5,
+    ...props
+}: {
+    children?: any;
+    className?: string;
+    containerClassName?: string;
+    colors?: string[];
+    waveWidth?: number;
+    backgroundFill?: string;
+    blur?: number;
+    speed?: "slow" | "fast";
+    waveOpacity?: number;
+    [key: string]: any;
+}) => {
+    const noise = createNoise3D();
+    let w: number,
+        h: number,
+        nt: number,
+        i: number,
+        x: number,
+        ctx: any,
+        canvas: any;
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const getSpeed = () => {
+        switch (speed) {
+            case "slow":
+                return 0.001;
+            case "fast":
+                return 0.002;
+            default:
+                return 0.001;
+        }
+    };
+
+    const init = () => {
+        canvas = canvasRef.current;
+        ctx = canvas.getContext("2d");
+        w = ctx.canvas.width = window.innerWidth;
+        h = ctx.canvas.height = window.innerHeight;
+        ctx.filter = `blur(${blur}px)`;
+        nt = 0;
+        window.onresize = function () {
+            w = ctx.canvas.width = window.innerWidth;
+            h = ctx.canvas.height = window.innerHeight;
+            ctx.filter = `blur(${blur}px)`;
+        };
+        render();
+    };
+
+    const waveColors = colors ?? [
+        "#ef4444", // red-500
+        "#f87171", // red-400
+        "#fee2e2", // red-100
+        "#fca5a5", // red-300
+        "#b91c1c", // red-700
+    ];
+    const drawWave = (n: number) => {
+        nt += getSpeed();
+        for (i = 0; i < n; i++) {
+            ctx.beginPath();
+            ctx.lineWidth = waveWidth || 50;
+            ctx.strokeStyle = waveColors[i % waveColors.length];
+            for (x = 0; x < w; x += 5) {
+                var y = noise(x / 800, 0.3 * i, nt) * 100;
+                ctx.lineTo(x, y + h * 0.5); // adjust for height, currently at 50% of the container
+            }
+            ctx.stroke();
+            ctx.closePath();
+        }
+    };
+
+    let animationId: number;
+    const render = () => {
+        ctx.fillStyle = backgroundFill || "white";
+        ctx.globalAlpha = waveOpacity || 0.5;
+        ctx.fillRect(0, 0, w, h);
+        drawWave(5);
+        animationId = requestAnimationFrame(render);
+    };
+
+    useEffect(() => {
+        init();
+        return () => {
+            cancelAnimationFrame(animationId);
+        };
+    }, []);
+
+    const [isSafari, setIsSafari] = useState(false);
+    useEffect(() => {
+        // Support for Safari
+        setIsSafari(
+            typeof window !== "undefined" &&
+            navigator.userAgent.includes("Safari") &&
+            !navigator.userAgent.includes("Chrome")
+        );
+    }, []);
+
     return (
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-            {/* Top Right Shapes */}
-            <div className="absolute top-0 right-0 w-[80%] h-[40%]">
-                <svg
-                    viewBox="0 0 200 200"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-full h-full"
-                    preserveAspectRatio="none"
-                >
-                    {/* Yellow Blob */}
-                    <path
-                        fill="#FBC02D"
-                        d="M120,0 C150,0 180,30 200,60 L200,0 Z"
-                        transform="scale(1.5) translate(-50, -20)"
-                        className="opacity-90"
-                    />
-                    {/* Red Wave */}
-                    <path
-                        fill="#D32F2F"
-                        d="M100,0 C140,0 160,40 200,50 L200,0 Z"
-                        transform="scale(1.2)"
-                    />
-                </svg>
-            </div>
-
-            {/* Better SVG approximation for Top Right based on image */}
-            <div className="absolute -top-10 -right-10 w-[300px] h-[300px] md:w-[400px] md:h-[400px]">
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                    <path d="M0 0H100V80C100 80 80 100 50 60C20 20 0 40 0 40V0Z" fill="#FBC02D" transform="translate(20, -10)" />
-                    <path d="M20 0H100V60C100 60 80 80 60 50C40 20 20 0 20 0Z" fill="#D32F2F" />
-                </svg>
-            </div>
-
-            {/* Bottom Left Shapes */}
-            <div className="absolute -bottom-10 -left-10 w-[250px] h-[250px] md:w-[350px] md:h-[350px]">
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full transform rotate-180">
-                    <path d="M0 0H100V80C100 80 80 100 50 60C20 20 0 40 0 40V0Z" fill="#FBC02D" transform="translate(20, -10)" />
-                    <path d="M20 0H100V60C100 60 80 80 60 50C40 20 20 0 20 0Z" fill="#D32F2F" />
-                </svg>
+        <div
+            className={cn(
+                "h-screen flex flex-col items-center justify-center",
+                containerClassName
+            )}
+        >
+            <canvas
+                className="absolute inset-0 z-0"
+                ref={canvasRef}
+                id="canvas"
+                style={{
+                    ...(isSafari ? { filter: `blur(${blur}px)` } : {}),
+                }}
+            ></canvas>
+            <div className={cn("relative z-10", className)} {...props}>
+                {children}
             </div>
         </div>
     );
-}
+};
