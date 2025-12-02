@@ -116,12 +116,13 @@ export default function CartPage() {
             }))
         };
 
+        console.log("Payload:", orderPayload);
         // Call RPC function
         const { data: order, error: orderError } = await supabase.rpc('create_order_with_stock_deduction', orderPayload);
 
         if (orderError) {
-            console.error("Error creating order:", orderError);
-            toast("Error al procesar el pedido: " + orderError.message, "error");
+            console.error("Error creating order:", JSON.stringify(orderError, null, 2));
+            toast("Error al procesar el pedido: " + (orderError.message || "Error desconocido"), "error");
             return;
         }
 
