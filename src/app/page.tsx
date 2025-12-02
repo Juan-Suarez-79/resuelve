@@ -28,6 +28,7 @@ export default function Home() {
   const { location: geoLoc, loading: geoLoading } = useGeolocation();
   const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showMap, setShowMap] = useState(false);
+  const [sortBy, setSortBy] = useState<'distance' | 'rating'>('distance');
 
   const location = manualLocation || geoLoc;
   const supabase = createClient();
@@ -70,15 +71,19 @@ export default function Home() {
       const { data: productsData } = await productQuery.limit(20);
 
       if (finalStoresData) {
-        let sortedStores = finalStoresData;
-        if (location) {
-          sortedStores = finalStoresData.map((store: any) => {
-            const dist = store.lat && store.lng
-              ? calculateDistance(location.lat, location.lng, store.lat, store.lng)
-              : 9999;
-            return { ...store, distanceVal: dist };
-          }).sort((a: any, b: any) => a.distanceVal - b.distanceVal);
+        let sortedStores = finalStoresData.map((store: any) => {
+          const dist = location && store.lat && store.lng
+            ? calculateDistance(location.lat, location.lng, store.lat, store.lng)
+            : 9999;
+          return { ...store, distanceVal: dist };
+        });
+
+        if (sortBy === 'distance' && location) {
+          sortedStores.sort((a: any, b: any) => a.distanceVal - b.distanceVal);
+        } else if (sortBy === 'rating') {
+          sortedStores.sort((a: any, b: any) => (b.average_rating || 0) - (a.average_rating || 0));
         }
+
         setStores(sortedStores);
       }
 
@@ -97,7 +102,7 @@ export default function Home() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [supabase, location, geoLoading, activeCategory, searchQuery, manualLocation]);
+  }, [supabase, location, geoLoading, activeCategory, searchQuery, manualLocation, sortBy]);
 
   return (
     <div className="pb-24 bg-gray-50 min-h-screen">
@@ -165,8 +170,21 @@ export default function Home() {
           {stores.length > 0 && (
             <section className="px-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Tiendas Cercanas</h2>
-                {location && <span className="text-xs bg-red-50 text-brand-red px-2 py-1 rounded-md font-bold">📍 Por distancia</span>}
+                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Tiendas {sortBy === 'distance' ? 'Cercanas' : 'Destacadas'}</h2>
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                  <button
+                    onClick={() => setSortBy('distance')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortBy === 'distance' ? 'bg-white text-brand-red shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Cercanos
+                  </button>
+                  <button
+                    onClick={() => setSortBy('rating')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortBy === 'rating' ? 'bg-white text-brand-red shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    ⭐ Mejor Valorados
+                  </button>
+                </div>
               </div>
               <div className="space-y-4">
                 {stores.map((store, index) => (

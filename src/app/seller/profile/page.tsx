@@ -247,7 +247,7 @@ export default function SellerConfigPage() {
 
                     <div className="bg-blue-50 text-blue-700 text-sm p-4 rounded-xl font-medium flex items-start gap-3">
                         <span className="text-lg">ℹ️</span>
-                        <p className="leading-snug">La tasa se actualiza automáticamente según el BCV. No es necesario cambiarla manualmente.</p>
+                        <p className="leading-snug">La tasa de cambio es fija y se actualiza automáticamente según el BCV (DolarAPI).</p>
                     </div>
                 </div>
 
