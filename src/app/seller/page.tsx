@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Plus, DollarSign, ShoppingBag } from "lucide-react";
+import { Loader2, Plus, DollarSign, ShoppingBag, UserSquare2 } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,8 @@ export default function SellerDashboard() {
     const [salesToday, setSalesToday] = useState(0);
     const [pendingCount, setPendingCount] = useState(0);
     const [totalOrders, setTotalOrders] = useState(0);
+    const [sellerName, setSellerName] = useState("");
+    const [approvalStatus, setApprovalStatus] = useState<string>('approved'); // Default to approved to avoid flash, or handle loading
     const supabase = createClient();
     const router = useRouter();
 
@@ -35,10 +37,21 @@ export default function SellerDashboard() {
                     return;
                 }
 
-                // Get Store ID
+                // Fetch Profile Name
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', user.id)
+                    .single();
+
+                if (profile) {
+                    setSellerName(profile.full_name || "Vendedor");
+                }
+
+                // Get Store ID & Approval Status
                 const { data: store } = await supabase
                     .from('stores')
-                    .select('id')
+                    .select('id, approval_status')
                     .eq('owner_id', user.id)
                     .single();
 
@@ -60,6 +73,7 @@ export default function SellerDashboard() {
                 if (ordersData) {
                     setOrders(ordersData);
                     setTotalOrders(ordersData.length);
+                    if (store.approval_status) setApprovalStatus(store.approval_status);
 
                     // Calculate Metrics
                     const today = new Date().toISOString().split('T')[0];
@@ -99,7 +113,7 @@ export default function SellerDashboard() {
                 <div className="mb-8 flex justify-between items-end">
                     <div>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight">Hola,</h1>
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-red to-red-600">Vendedor!</h1>
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-red to-red-600">{sellerName}!</h1>
                     </div>
                     <div className="text-right bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total Pedidos</p>
@@ -127,20 +141,23 @@ export default function SellerDashboard() {
                         </div>
                     </Link>
 
-                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
+                    <Link href="/seller/kyc" className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden active:scale-[0.98] hover:scale-[1.02] transition-all group">
                         <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
-                            <ShoppingBag className="w-24 h-24" />
+                            <UserSquare2 className="w-24 h-24" />
                         </div>
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-3 text-gray-500">
-                                <div className="p-2 bg-gray-100 rounded-xl">
-                                    <ShoppingBag className="w-5 h-5 text-gray-600" />
+                                <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+                                    <UserSquare2 className="w-5 h-5" />
                                 </div>
-                                <span className="text-sm font-bold">Pendientes</span>
+                                <span className="text-sm font-bold">Verificación</span>
                             </div>
-                            <p className="text-3xl font-black text-gray-900">{pendingCount}</p>
+                            <p className="text-sm font-medium text-gray-600 mb-2">Estado KYC</p>
+                            <div className={`text-xs font-bold inline-flex items-center gap-1 px-3 py-1.5 rounded-full ${approvalStatus === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                {approvalStatus === 'approved' ? 'Verificado' : 'Pendiente'}
+                            </div>
                         </div>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Recent Orders */}
@@ -206,13 +223,47 @@ export default function SellerDashboard() {
                 </div>
             </MotionWrapper>
 
-            {/* Floating Action Button */}
-            <Link
-                href="/seller/products/new"
-                className="fixed bottom-24 right-6 w-16 h-16 bg-brand-red text-white rounded-full shadow-xl shadow-red-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-50 group"
-            >
-                <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
-            </Link>
+            {/* Floating Action Button - Only if Approved */}
+            {approvalStatus === 'approved' && (
+                <Link
+                    href="/seller/products/new"
+                    className="fixed bottom-24 right-6 w-16 h-16 bg-brand-red text-white rounded-full shadow-xl shadow-red-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-50 group"
+                >
+                    <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
+                </Link>
+            )}
+
+            {/* Approval Status Modal */}
+            {approvalStatus === 'pending' && (
+                <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 mb-3 leading-tight">Cuenta en Revisión</h2>
+                        <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+                            Tu solicitud de vendedor está siendo revisada por nuestro equipo. Te notificaremos cuando sea aprobada para que puedas empezar a vender.
+                        </p>
+                        <div className="p-4 bg-gray-50 rounded-xl text-xs text-gray-400 font-mono">
+                            Estado: Pendiente de Aprobación
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {approvalStatus === 'rejected' && (
+                <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="text-4xl">❌</div>
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 mb-3 leading-tight">Solicitud Rechazada</h2>
+                        <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+                            Lo sentimos, tu solicitud para ser vendedor no ha sido aprobada. Contacta a soporte para más información.
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

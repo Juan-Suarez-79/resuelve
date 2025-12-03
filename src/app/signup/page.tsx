@@ -12,15 +12,14 @@ import { cn } from "@/lib/utils";
 
 function SignupForm() {
     const searchParams = useSearchParams();
-    const initialRole = searchParams.get("role") === "seller" ? "seller" : "buyer";
-
+    const [role, setRole] = useState<"buyer" | "seller">("buyer");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [fullName, setFullName] = useState("");
     const [phone, setPhone] = useState("");
-    const [role, setRole] = useState<"buyer" | "seller">(initialRole);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
     const router = useRouter();
     const supabase = createClient();
 
@@ -48,10 +47,41 @@ function SignupForm() {
         }
 
         if (authData.user) {
-            // Profile is created automatically by database trigger
-            router.push('/welcome');
+            setSuccess(true);
+            setLoading(false);
         }
     };
+
+    if (success) {
+        return (
+            <MotionWrapper className="relative z-10 w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 my-10 text-center">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-300">
+                    <Mail className="w-10 h-10 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Revisa tu correo!</h2>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                    Hemos enviado un enlace de confirmación a <span className="font-bold text-gray-900">{email}</span>.
+                    <br /><br />
+                    Por favor, haz clic en el enlace para activar tu cuenta y comenzar a usar Resuelve.
+                </p>
+
+                <div className="space-y-3">
+                    <Link
+                        href="/login"
+                        className="block w-full bg-brand-red text-white py-4 rounded-xl font-bold shadow-lg shadow-red-200 active:scale-[0.98] hover:bg-red-700 transition-all"
+                    >
+                        Ir a Iniciar Sesión
+                    </Link>
+                    <button
+                        onClick={() => setSuccess(false)}
+                        className="block w-full text-gray-500 font-medium py-2 hover:text-gray-700"
+                    >
+                        Volver al registro
+                    </button>
+                </div>
+            </MotionWrapper>
+        );
+    }
 
     return (
         <MotionWrapper className="relative z-10 w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 my-10">
@@ -75,32 +105,7 @@ function SignupForm() {
 
             <form onSubmit={handleSignup} className="space-y-4">
                 {/* Role Selection */}
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                    <button
-                        type="button"
-                        onClick={() => setRole("buyer")}
-                        className={cn(
-                            "p-3 rounded-xl border-2 transition-all font-bold text-sm",
-                            role === "buyer"
-                                ? "border-brand-red bg-red-50 text-brand-red shadow-sm"
-                                : "border-gray-200 text-gray-500 bg-white hover:border-gray-300 hover:bg-gray-50"
-                        )}
-                    >
-                        Comprador
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setRole("seller")}
-                        className={cn(
-                            "p-3 rounded-xl border-2 transition-all font-bold text-sm",
-                            role === "seller"
-                                ? "border-brand-yellow bg-yellow-50 text-yellow-800 border-brand-yellow shadow-sm"
-                                : "border-gray-200 text-gray-500 bg-white hover:border-gray-300 hover:bg-gray-50"
-                        )}
-                    >
-                        Vendedor
-                    </button>
-                </div>
+
 
                 <div className="relative group">
                     <User className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
@@ -110,7 +115,7 @@ function SignupForm() {
                         onChange={(e) => setFullName(e.target.value)}
                         required
                         placeholder="Nombre Completo"
-                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-500 font-medium text-black"
                     />
                 </div>
                 <div className="relative group">
@@ -121,7 +126,7 @@ function SignupForm() {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="Correo Electrónico"
-                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-500 font-medium text-black"
                     />
                 </div>
                 <div className="relative group">
@@ -132,7 +137,7 @@ function SignupForm() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         placeholder="Contraseña"
-                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-500 font-medium text-black"
                     />
                 </div>
                 <div className="relative group">
@@ -143,7 +148,7 @@ function SignupForm() {
                         onChange={(e) => setPhone(e.target.value)}
                         required
                         placeholder="Teléfono"
-                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-500 font-medium text-black"
                     />
                 </div>
 

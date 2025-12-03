@@ -19,6 +19,11 @@ export default function RegisterStorePage() {
     const [storeName, setStoreName] = useState("");
     const [category, setCategory] = useState("otros");
     const [phone, setPhone] = useState("");
+    const [fullName, setFullName] = useState("");
+    const [cedula, setCedula] = useState("");
+    const [cedulaPhoto, setCedulaPhoto] = useState<File | null>(null);
+    const [selfiePhoto, setSelfiePhoto] = useState<File | null>(null);
+
     const [lat, setLat] = useState<number | null>(null);
     const [lng, setLng] = useState<number | null>(null);
     const [showMap, setShowMap] = useState(false);
@@ -72,10 +77,43 @@ export default function RegisterStorePage() {
         setLoading(true);
 
         try {
-            // 1. Update User Role to Seller
+
+            // 1. Upload Cedula Photo
+            let cedulaPhotoUrl = null;
+            if (cedulaPhoto) {
+                const fileExt = cedulaPhoto.name.split('.').pop();
+                const fileName = `cedula-${userId}-${Math.random()}.${fileExt}`;
+                const { error: uploadError, data: uploadData } = await supabase.storage
+                    .from('kyc-documents')
+                    .upload(fileName, cedulaPhoto);
+
+                if (uploadError) throw new Error("Error subiendo foto de cédula: " + uploadError.message);
+                cedulaPhotoUrl = uploadData.path;
+            }
+
+            // 2. Upload Selfie Photo
+            let selfiePhotoUrl = null;
+            if (selfiePhoto) {
+                const fileExt = selfiePhoto.name.split('.').pop();
+                const fileName = `selfie-${userId}-${Math.random()}.${fileExt}`;
+                const { error: uploadError, data: uploadData } = await supabase.storage
+                    .from('kyc-documents')
+                    .upload(fileName, selfiePhoto);
+
+                if (uploadError) throw new Error("Error subiendo selfie: " + uploadError.message);
+                selfiePhotoUrl = uploadData.path;
+            }
+
+            // 3. Update User Profile (Role, Name, Cedula, Photos)
             const { error: profileError } = await supabase
                 .from('profiles')
-                .update({ role: 'seller' })
+                .update({
+                    role: 'seller',
+                    full_name: fullName,
+                    cedula: cedula,
+                    cedula_photo_url: cedulaPhotoUrl,
+                    selfie_holding_id_url: selfiePhotoUrl
+                })
                 .eq('id', userId);
 
             if (profileError) throw new Error("Error actualizando perfil: " + profileError.message);
@@ -94,7 +132,8 @@ export default function RegisterStorePage() {
                     lat: lat,
                     lng: lng,
                     is_open: true,
-                    delivery_fee: 0 // Default
+                    delivery_fee: 0,
+                    approval_status: 'pending' // Explicitly set to pending
                 })
                 .select()
                 .single();
@@ -117,6 +156,7 @@ export default function RegisterStorePage() {
             }
 
             // Success
+            alert("Solicitud enviada con éxito. Tu tienda está en revisión.");
             router.push('/seller');
 
         } catch (error: any) {
@@ -149,9 +189,101 @@ export default function RegisterStorePage() {
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">Registra tu Tienda</h1>
                         <p className="text-gray-500 text-sm mb-8">Completa los datos para comenzar a vender.</p>
 
-                        {/* STEP 1: Basic Info */}
+                        {/* STEP 1: Basic Info & KYC */}
                         {step === 1 && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
+                                    <h3 className="font-bold text-blue-800 text-sm mb-1">Verificación de Identidad</h3>
+                                    <p className="text-xs text-blue-600">Para garantizar la seguridad, necesitamos tus datos reales. Estos no serán públicos.</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Nombre y Apellido</label>
+                                        <input
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            placeholder="Ej: Juan Pérez"
+                                            className="w-full px-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-black placeholder:text-gray-500 transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Cédula de Identidad</label>
+                                        <input
+                                            type="text"
+                                            value={cedula}
+                                            onChange={(e) => setCedula(e.target.value)}
+                                            placeholder="Ej: V-12345678"
+                                            className="w-full px-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-black placeholder:text-gray-500 transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+
+
+                                <div className="h-px bg-gray-100 my-4" />
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Foto de la Cédula</label>
+                                    <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    setCedulaPhoto(e.target.files[0]);
+                                                }
+                                            }}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        />
+                                        {cedulaPhoto ? (
+                                            <div className="flex items-center gap-2 text-green-600 font-bold">
+                                                <CheckCircle2 className="w-6 h-6" />
+                                                <span>{cedulaPhoto.name}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center text-gray-500">
+                                                <CreditCard className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                                                <p className="text-sm font-medium">Sube una foto clara de tu cédula</p>
+                                                <p className="text-xs text-gray-400">Formatos: JPG, PNG</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Selfie con Cédula</label>
+                                    <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    setSelfiePhoto(e.target.files[0]);
+                                                }
+                                            }}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        />
+                                        {selfiePhoto ? (
+                                            <div className="flex items-center gap-2 text-green-600 font-bold">
+                                                <CheckCircle2 className="w-6 h-6" />
+                                                <span>{selfiePhoto.name}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center text-gray-500">
+                                                <div className="w-8 h-8 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                                                    <span className="text-xl">🤳</span>
+                                                </div>
+                                                <p className="text-sm font-medium">Sube una selfie sosteniendo tu cédula</p>
+                                                <p className="text-xs text-gray-400">Asegúrate de que tu rostro y la cédula sean visibles</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-gray-100 my-4" />
+
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Nombre de la Tienda</label>
                                     <div className="relative">
@@ -161,7 +293,7 @@ export default function RegisterStorePage() {
                                             value={storeName}
                                             onChange={(e) => setStoreName(e.target.value)}
                                             placeholder="Ej: Burger King Coro"
-                                            className="w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-gray-900 transition-all"
+                                            className="w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-black placeholder:text-gray-500 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -172,7 +304,7 @@ export default function RegisterStorePage() {
                                         <select
                                             value={category}
                                             onChange={(e) => setCategory(e.target.value)}
-                                            className="w-full pl-4 pr-10 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-gray-900 appearance-none transition-all"
+                                            className="w-full pl-4 pr-10 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-black transition-all appearance-none"
                                         >
                                             <option value="otros">Otros</option>
                                             <option value="ropa">Ropa</option>
@@ -195,15 +327,15 @@ export default function RegisterStorePage() {
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
                                             placeholder="Ej: 584121234567"
-                                            className="w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-gray-900 transition-all"
+                                            className="w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none font-medium text-black placeholder:text-gray-500 transition-all"
                                         />
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={() => {
-                                        if (storeName && phone) setStep(2);
-                                        else alert("Por favor completa todos los campos");
+                                        if (storeName && phone && fullName && cedula && cedulaPhoto && selfiePhoto) setStep(2);
+                                        else alert("Por favor completa todos los campos, incluyendo las fotos de verificación.");
                                     }}
                                     className="w-full bg-brand-red text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 transition-all mt-4"
                                 >
@@ -319,16 +451,16 @@ export default function RegisterStorePage() {
                                         <div className="space-y-3 mb-4">
                                             {newMethodType === 'pago_movil' && (
                                                 <>
-                                                    <input placeholder="Banco" className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, bank: e.target.value })} />
-                                                    <input placeholder="Cédula" className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, id: e.target.value })} />
-                                                    <input placeholder="Teléfono" className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, phone: e.target.value })} />
+                                                    <input placeholder="Banco" className="w-full p-3 rounded-xl border border-gray-200 text-sm text-black placeholder:text-gray-500" onChange={e => setNewMethodDetails({ ...newMethodDetails, bank: e.target.value })} />
+                                                    <input placeholder="Cédula" className="w-full p-3 rounded-xl border border-gray-200 text-sm text-black placeholder:text-gray-500" onChange={e => setNewMethodDetails({ ...newMethodDetails, id: e.target.value })} />
+                                                    <input placeholder="Teléfono" className="w-full p-3 rounded-xl border border-gray-200 text-sm text-black placeholder:text-gray-500" onChange={e => setNewMethodDetails({ ...newMethodDetails, phone: e.target.value })} />
                                                 </>
                                             )}
                                             {(newMethodType === 'zelle' || newMethodType === 'zinli') && (
-                                                <input placeholder={`Correo ${newMethodType === 'zelle' ? 'Zelle' : 'Zinli'}`} className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, email: e.target.value })} />
+                                                <input placeholder={`Correo ${newMethodType === 'zelle' ? 'Zelle' : 'Zinli'}`} className="w-full p-3 rounded-xl border border-gray-200 text-sm text-black placeholder:text-gray-500" onChange={e => setNewMethodDetails({ ...newMethodDetails, email: e.target.value })} />
                                             )}
                                             {newMethodType === 'binance' && (
-                                                <input placeholder="Correo / Pay ID" className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, email: e.target.value })} />
+                                                <input placeholder="Correo / Pay ID" className="w-full p-3 rounded-xl border border-gray-200 text-sm text-black placeholder:text-gray-500" onChange={e => setNewMethodDetails({ ...newMethodDetails, email: e.target.value })} />
                                             )}
                                         </div>
 

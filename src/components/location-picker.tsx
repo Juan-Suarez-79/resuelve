@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, Circle } from "react-leaflet";
+import { createClient } from "@/lib/supabase/client";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { CORO_COORDS, isLocationInCoro, MAX_DISTANCE_KM } from "@/lib/hooks/use-geolocation";
@@ -24,15 +25,34 @@ interface LocationPickerProps {
 
 function LocationMarker({ onLocationSelect, initialPos }: { onLocationSelect: (lat: number, lng: number) => void, initialPos: L.LatLngExpression | null }) {
     const [position, setPosition] = useState<L.LatLngExpression | null>(initialPos);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const { toast } = useToast();
+    const supabase = createClient();
+
+    useEffect(() => {
+        const checkAdmin = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data } = await supabase.from('profiles').select('is_super_admin').eq('id', user.id).single();
+                if (data?.is_super_admin) setIsSuperAdmin(true);
+            }
+        };
+        checkAdmin();
+    }, []);
 
     const map = useMapEvents({
         click(e) {
-            if (!isLocationInCoro(e.latlng.lat, e.latlng.lng)) {
+            const inZone = isLocationInCoro(e.latlng.lat, e.latlng.lng);
+
+            if (!inZone && !isSuperAdmin) {
                 toast("Ubicación fuera de zona", "error");
-                // Optional: alert("Resuelve solo está disponible en Coro, Falcón.");
                 return;
             }
+
+            if (!inZone && isSuperAdmin) {
+                toast("Modo Super Admin: Ubicación permitida fuera de zona", "success");
+            }
+
             setPosition(e.latlng);
             onLocationSelect(e.latlng.lat, e.latlng.lng);
             map.flyTo(e.latlng, map.getZoom());

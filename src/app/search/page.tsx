@@ -44,12 +44,14 @@ export default function SearchPage() {
         try {
             let productQuery = supabase
                 .from('products')
-                .select('*, stores(id, name, exchange_rate_bs, lat, lng)');
+                .select('*, stores!inner(id, name, exchange_rate_bs, lat, lng, is_banned)')
+                .eq('stores.is_banned', false); // Filter out products from banned stores
 
             let storeQuery = supabase
                 .from('stores')
                 .select('*')
-                .eq('is_open', true);
+                .eq('is_open', true)
+                .eq('is_banned', false); // Filter out banned stores
 
             // Text Search
             if (query) {
@@ -75,15 +77,21 @@ export default function SearchPage() {
             let products = productsRes.data || [];
             let stores = storesRes.data || [];
 
-            // Sort Stores by Distance if location available
-            if (location) {
-                stores = stores.map((store: any) => ({
-                    ...store,
-                    distanceVal: (store.lat && store.lng)
-                        ? calculateDistance(location.lat, location.lng, store.lat, store.lng)
-                        : 9999
-                })).sort((a: any, b: any) => a.distanceVal - b.distanceVal);
-            }
+            // Sort Stores by Boost and then Distance
+            stores = stores.map((store: any) => ({
+                ...store,
+                distanceVal: (location && store.lat && store.lng)
+                    ? calculateDistance(location.lat, location.lng, store.lat, store.lng)
+                    : 9999,
+                isBoosted: store.boost_expires_at && new Date(store.boost_expires_at) > new Date()
+            })).sort((a: any, b: any) => {
+                // Primary Sort: Boosted First
+                if (a.isBoosted && !b.isBoosted) return -1;
+                if (!a.isBoosted && b.isBoosted) return 1;
+
+                // Secondary Sort: Distance
+                return a.distanceVal - b.distanceVal;
+            });
 
             setResults({ products, stores });
         } catch (error) {

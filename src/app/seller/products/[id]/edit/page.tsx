@@ -250,7 +250,7 @@ export default function EditProductPage() {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="w-full bg-brand-red text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="w-full bg-brand-red mb-12 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-5 h-5" /> Guardar Cambios</>}
                         </button>

@@ -46,12 +46,17 @@ export default function Home() {
       // Fetch Stores
       // Try to fetch from view first, fallback to table if view doesn't exist (or just use view)
       // Note: We assume the view 'stores_with_ratings' exists.
-      let storeQuery = supabase.from('stores_with_ratings').select('*').eq('is_open', true);
+      let storeQuery = supabase
+        .from('stores_with_ratings')
+        .select('*')
+        .eq('is_open', true)
+        .eq('is_banned', false); // Filter out banned stores
 
       // Fetch Products
       let productQuery = supabase
         .from('products')
-        .select('*, stores!inner(name, exchange_rate_bs, category)');
+        .select('*, stores!inner(name, exchange_rate_bs, category, is_banned)')
+        .eq('stores.is_banned', false); // Filter out products from banned stores
 
       // Apply Filters
       if (activeCategory !== "all") {
@@ -70,7 +75,11 @@ export default function Home() {
       let finalStoresData = storesData;
       if (storeError) {
         console.warn("Could not fetch from stores_with_ratings, falling back to stores table", storeError);
-        const { data: fallbackData } = await supabase.from('stores').select('*').eq('is_open', true);
+        const { data: fallbackData } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('is_open', true)
+          .eq('is_banned', false);
         finalStoresData = fallbackData;
       }
 
@@ -81,14 +90,26 @@ export default function Home() {
           const dist = location && store.lat && store.lng
             ? calculateDistance(location.lat, location.lng, store.lat, store.lng)
             : 9999;
-          return { ...store, distanceVal: dist };
+
+          // Check if boosted
+          const isBoosted = store.boost_expires_at && new Date(store.boost_expires_at) > new Date();
+
+          return { ...store, distanceVal: dist, isBoosted };
         });
 
-        if (sortBy === 'distance' && location) {
-          sortedStores.sort((a: any, b: any) => a.distanceVal - b.distanceVal);
-        } else if (sortBy === 'rating') {
-          sortedStores.sort((a: any, b: any) => (b.average_rating || 0) - (a.average_rating || 0));
-        }
+        sortedStores.sort((a: any, b: any) => {
+          // Primary Sort: Boosted First
+          if (a.isBoosted && !b.isBoosted) return -1;
+          if (!a.isBoosted && b.isBoosted) return 1;
+
+          // Secondary Sort: Selected Criteria
+          if (sortBy === 'distance' && location) {
+            return a.distanceVal - b.distanceVal;
+          } else if (sortBy === 'rating') {
+            return (b.average_rating || 0) - (a.average_rating || 0);
+          }
+          return 0;
+        });
 
         setStores(sortedStores);
       }

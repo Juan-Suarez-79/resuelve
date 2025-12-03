@@ -1,0 +1,8 @@
+-- Add missing columns to stores table
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS exchange_rate_bs NUMERIC DEFAULT 0;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS payment_info TEXT DEFAULT '';
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC DEFAULT 0;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS is_open BOOLEAN DEFAULT true;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS lat NUMERIC;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS lng NUMERIC;

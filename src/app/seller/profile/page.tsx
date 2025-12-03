@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Loader2, Save, Camera } from "lucide-react";
+
+import { ArrowLeft, MapPin, Loader2, Save, Camera, Trash2, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -362,7 +363,14 @@ export default function SellerConfigPage() {
                     </p>
 
                     <div className="space-y-3 mb-4">
-                        <PaymentMethodsList storeId={storeId} />
+                        {storeId ? (
+                            <PaymentMethodsList storeId={storeId} />
+                        ) : (
+                            <div className="text-center py-4 text-gray-400">
+                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                                <p className="text-sm">Cargando información de la tienda...</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -437,6 +445,12 @@ function PaymentMethodsList({ storeId }: { storeId: string | null }) {
                 </div>
             ))}
 
+            {methods.length === 0 && (
+                <div className="text-center py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200 mb-2">
+                    <p className="text-gray-400 text-sm">No has registrado métodos de pago.</p>
+                </div>
+            )}
+
             <button
                 onClick={() => setShowModal(true)}
                 className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-500 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-2 mt-2"
@@ -459,7 +473,7 @@ function PaymentMethodsList({ storeId }: { storeId: string | null }) {
     );
 }
 
-import { Trash2, Plus, X } from "lucide-react";
+
 
 function AddPaymentMethodModal({ storeId, onClose, onSuccess }: { storeId: string, onClose: () => void, onSuccess: () => void }) {
     const [type, setType] = useState('pago_movil');

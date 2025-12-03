@@ -73,7 +73,8 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Seller Dashboard Link */}
-                {isSeller && (
+                {/* Seller Dashboard Link or Register Store */}
+                {isSeller ? (
                     <Link href="/seller" className="block w-full bg-gradient-to-r from-brand-red to-red-600 text-white p-5 rounded-2xl shadow-lg shadow-red-200 mb-8 flex items-center justify-between active:scale-[0.98] hover:scale-[1.02] transition-all group relative overflow-hidden">
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex items-center gap-4 relative z-10">
@@ -83,6 +84,22 @@ export default function ProfilePage() {
                             <div>
                                 <h3 className="font-bold text-lg leading-tight">Panel de Vendedor</h3>
                                 <p className="text-xs font-medium text-white/80">Gestionar mi tienda</p>
+                            </div>
+                        </div>
+                        <div className="bg-white/20 rounded-full p-2 backdrop-blur-sm group-hover:bg-white/30 transition-colors relative z-10">
+                            <ArrowLeft className="w-5 h-5 rotate-180" />
+                        </div>
+                    </Link>
+                ) : (
+                    <Link href="/register-store" className="block w-full bg-gray-900 text-white p-5 rounded-2xl shadow-lg shadow-gray-200 mb-8 flex items-center justify-between active:scale-[0.98] hover:scale-[1.02] transition-all group relative overflow-hidden">
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm flex items-center justify-center shadow-inner">
+                                <Store className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg leading-tight">¿Tienes un negocio?</h3>
+                                <p className="text-xs font-medium text-white/80">Registra tu tienda ahora</p>
                             </div>
                         </div>
                         <div className="bg-white/20 rounded-full p-2 backdrop-blur-sm group-hover:bg-white/30 transition-colors relative z-10">
