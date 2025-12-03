@@ -204,7 +204,7 @@ export default function CartPage() {
                 <div className="space-y-4 mb-8">
                     {items.map((item) => (
                         <div key={item.id} className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                            <Link href={`/store/${item.storeId}`} className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 block group">
+                            <Link href={`/store/${item.storeSlug || item.storeId}`} className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 block group">
                                 {item.imageUrl ? (
                                     <Image src={item.imageUrl} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                                 ) : (
@@ -212,7 +212,7 @@ export default function CartPage() {
                                 )}
                             </Link>
                             <div className="flex-1">
-                                <Link href={`/store/${item.storeId}`}>
+                                <Link href={`/store/${item.storeSlug || item.storeId}`}>
                                     <h3 className="font-bold text-gray-900 leading-tight mb-1 hover:text-brand-red transition-colors line-clamp-2">{item.title}</h3>
                                 </Link>
                                 <div className="flex flex-col">

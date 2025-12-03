@@ -44,7 +44,7 @@ export default function SearchPage() {
         try {
             let productQuery = supabase
                 .from('products')
-                .select('*, stores!inner(id, name, exchange_rate_bs, lat, lng, is_banned)')
+                .select('*, stores!inner(id, name, exchange_rate_bs, lat, lng, is_banned, slug)')
                 .eq('stores.is_banned', false); // Filter out products from banned stores
 
             let storeQuery = supabase
@@ -212,6 +212,7 @@ export default function SearchPage() {
                                             exchangeRate={product.stores?.exchange_rate_bs || 0}
                                             storeName={product.stores?.name || "Tienda"}
                                             storeId={product.store_id}
+                                            storeSlug={product.stores?.slug}
                                         />
                                     ))}
                                 </div>
@@ -222,7 +223,7 @@ export default function SearchPage() {
                             results.stores.length > 0 ? (
                                 <div className="space-y-4">
                                     {results.stores.map((store) => (
-                                        <Link href={`/store/${store.id}`} key={store.id} className="block">
+                                        <Link href={`/store/${store.slug}`} key={store.id} className="block">
                                             <StoreCard
                                                 name={store.name}
                                                 rating={store.average_rating || 0}

@@ -34,7 +34,7 @@ export default function ProductDetailsPage() {
             if (!id) return;
             const { data, error } = await supabase
                 .from('products')
-                .select('*, stores(id, name, exchange_rate_bs)')
+                .select('*, stores(id, name, exchange_rate_bs, slug)')
                 .eq('id', id)
                 .single();
 
@@ -90,6 +90,7 @@ export default function ProductDetailsPage() {
             priceUsd: product.price_usd,
             storeName: product.stores.name,
             storeId: product.store_id,
+            storeSlug: product.stores.slug,
             quantity: quantity,
             imageUrl: product.image_url
         });
@@ -136,7 +137,7 @@ export default function ProductDetailsPage() {
             <MotionWrapper className="px-5 -mt-6 relative z-10 bg-white rounded-t-[2rem] pt-8">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <Link href={`/store/${product.store_id}`} className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-red bg-red-50 px-2.5 py-1 rounded-full mb-3 hover:bg-red-100 transition-colors">
+                        <Link href={`/store/${product.stores.slug}`} className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-red bg-red-50 px-2.5 py-1 rounded-full mb-3 hover:bg-red-100 transition-colors">
                             <Store className="w-3 h-3" />
                             {product.stores?.name}
                         </Link>

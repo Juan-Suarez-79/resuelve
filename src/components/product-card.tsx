@@ -14,6 +14,7 @@ interface ProductCardProps {
     exchangeRate: number;
     storeName: string;
     storeId: string;
+    storeSlug?: string;
 }
 
 import Link from "next/link";
@@ -28,6 +29,7 @@ export function ProductCard({
     exchangeRate,
     storeName,
     storeId,
+    storeSlug,
 }: ProductCardProps) {
     const { addItem, items, clearCart } = useCart();
     const [isFavorite, setIsFavorite] = useState(false);
@@ -75,6 +77,7 @@ export function ProductCard({
             priceUsd,
             storeName,
             storeId,
+            storeSlug,
             quantity: 1,
             imageUrl
         });

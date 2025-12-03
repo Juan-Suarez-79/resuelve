@@ -55,7 +55,7 @@ export default function Home() {
       // Fetch Products
       let productQuery = supabase
         .from('products')
-        .select('*, stores!inner(name, exchange_rate_bs, category, is_banned)')
+        .select('*, stores!inner(name, exchange_rate_bs, category, is_banned, slug)')
         .eq('stores.is_banned', false); // Filter out products from banned stores
 
       // Apply Filters
@@ -217,7 +217,7 @@ export default function Home() {
               <div className="space-y-4">
                 {stores.map((store, index) => (
                   <MotionWrapper key={store.id} delay={index * 0.1}>
-                    <Link href={`/store/${store.id}`} className="block">
+                    <Link href={`/store/${store.slug}`} className="block">
                       <StoreCard
                         name={store.name}
                         rating={store.average_rating || 0}
@@ -252,6 +252,7 @@ export default function Home() {
                       exchangeRate={product.stores?.exchange_rate_bs || 0}
                       storeName={product.stores?.name || "Tienda"}
                       storeId={product.store_id}
+                      storeSlug={product.stores?.slug}
                     />
                   </MotionWrapper>
                 ))}

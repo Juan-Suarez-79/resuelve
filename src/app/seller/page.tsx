@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Plus, DollarSign, ShoppingBag, UserSquare2 } from "lucide-react";
+import { Loader2, Plus, DollarSign, ShoppingBag, UserSquare2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ export default function SellerDashboard() {
     const [totalOrders, setTotalOrders] = useState(0);
     const [sellerName, setSellerName] = useState("");
     const [approvalStatus, setApprovalStatus] = useState<string>('approved'); // Default to approved to avoid flash, or handle loading
+    const [locationRequests, setLocationRequests] = useState(0);
     const supabase = createClient();
     const router = useRouter();
 
@@ -51,7 +52,7 @@ export default function SellerDashboard() {
                 // Get Store ID & Approval Status
                 const { data: store } = await supabase
                     .from('stores')
-                    .select('id, approval_status')
+                    .select('id, approval_status, location_requests_count')
                     .eq('owner_id', user.id)
                     .single();
 
@@ -59,6 +60,8 @@ export default function SellerDashboard() {
                     router.push('/seller/profile');
                     return;
                 }
+
+                if (store.location_requests_count) setLocationRequests(store.location_requests_count);
 
                 // Fetch Orders
                 const { data: ordersData } = await supabase
@@ -122,7 +125,7 @@ export default function SellerDashboard() {
                 </div>
 
                 {/* Metrics Cards */}
-                <div className="grid grid-cols-2 gap-4 mb-10">
+                <div className="grid grid-cols-2 gap-4 mb-4">
                     <Link href="/seller/earnings" className="bg-gradient-to-br from-brand-red to-red-700 p-6 rounded-[2rem] text-white shadow-xl shadow-red-200 active:scale-[0.98] hover:scale-[1.02] transition-all group relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <DollarSign className="w-24 h-24" />
@@ -158,6 +161,24 @@ export default function SellerDashboard() {
                             </div>
                         </div>
                     </Link>
+                </div>
+
+                {/* Location Stats Card */}
+                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-10 relative overflow-hidden">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600">
+                            <MapPin className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-gray-500 mb-0.5">Interés en Ubicación</p>
+                            <p className="text-2xl font-black text-gray-900">
+                                {locationRequests} <span className="text-sm font-medium text-gray-400">clics</span>
+                            </p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-3 pl-1">
+                        Veces que los clientes han solicitado ver tu ubicación en el mapa.
+                    </p>
                 </div>
 
                 {/* Recent Orders */}

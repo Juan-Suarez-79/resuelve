@@ -5,19 +5,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Star, Search, MapPin, Loader2, X, Flag } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useGeolocation, calculateDistance } from "@/lib/hooks/use-geolocation";
 import { useToast } from "@/components/ui/toast";
 
 export default function StorePage() {
     const params = useParams();
-    const id = params.id as string;
+    const slug = params.slug as string;
     const [store, setStore] = useState<any>(null);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { location } = useGeolocation();
     const supabase = createClient();
+    const router = useRouter();
     const { toast } = useToast();
 
     const [reviews, setReviews] = useState<any[]>([]);
@@ -33,11 +34,27 @@ export default function StorePage() {
 
     useEffect(() => {
         async function fetchStoreData() {
-            // Fetch Store Details
+            // Check if slug is a UUID (legacy ID support)
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+
+            if (isUuid) {
+                const { data: storeById } = await supabase
+                    .from('stores')
+                    .select('slug')
+                    .eq('id', slug)
+                    .single();
+
+                if (storeById?.slug) {
+                    router.replace(`/store/${storeById.slug}`);
+                    return;
+                }
+            }
+
+            // Fetch Store Details by Slug
             const { data: storeData, error: storeError } = await supabase
                 .from('stores')
                 .select('*')
-                .eq('id', id)
+                .eq('slug', slug)
                 .single();
 
             if (storeError) {
@@ -47,12 +64,13 @@ export default function StorePage() {
             }
 
             setStore(storeData);
+            const storeId = storeData.id;
 
             // Fetch Products
             const { data: productsData } = await supabase
                 .from('products')
                 .select('*')
-                .eq('store_id', id)
+                .eq('store_id', storeId)
                 .eq('in_stock', true);
 
             if (productsData) setProducts(productsData);
@@ -61,7 +79,7 @@ export default function StorePage() {
             const { data: reviewsData } = await supabase
                 .from('reviews')
                 .select('*, profiles(full_name)')
-                .eq('store_id', id)
+                .eq('store_id', storeId)
                 .order('created_at', { ascending: false });
 
             if (reviewsData) {
@@ -75,12 +93,13 @@ export default function StorePage() {
             setLoading(false);
         }
 
-        if (id) {
+        if (slug) {
             fetchStoreData();
         }
-    }, [id, supabase]);
+    }, [slug, supabase, router]);
 
     const handleSubmitReview = async () => {
+        if (!store) return;
         setSubmittingReview(true);
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -93,7 +112,7 @@ export default function StorePage() {
         const { error } = await supabase.from('reviews').insert({
             order_id: null, // General review
             user_id: user.id,
-            store_id: id,
+            store_id: store.id,
             rating,
             comment
         });
@@ -110,6 +129,7 @@ export default function StorePage() {
     };
 
     const handleReportStore = async () => {
+        if (!store) return;
         if (!reportReason.trim()) {
             toast("Por favor escribe una razón para el reporte", "error");
             return;
@@ -125,7 +145,7 @@ export default function StorePage() {
         }
 
         const { error } = await supabase.from('store_reports').insert({
-            store_id: id,
+            store_id: store.id,
             reporter_id: user.id,
             reason: reportReason
         });
@@ -138,6 +158,20 @@ export default function StorePage() {
             setReportReason("");
         }
         setSubmittingReport(false);
+    };
+
+    const handleOpenLocation = async () => {
+        if (!store?.lat || !store?.lng) {
+            toast("Ubicación no disponible", "error");
+            return;
+        }
+
+        // Track the click
+        await supabase.rpc('increment_location_requests', { row_id: store.id });
+
+        // Open Maps
+        const url = `https://www.google.com/maps/search/?api=1&query=${store.lat},${store.lng}`;
+        window.open(url, '_blank');
     };
 
     if (loading) {
@@ -194,7 +228,7 @@ export default function StorePage() {
                 {/* Store Info Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                     <h1 className="text-3xl font-bold mb-1">{store.name}</h1>
-                    <div className="flex items-center gap-2 text-sm opacity-90">
+                    <div className="flex items-center gap-2 text-sm opacity-90 mb-3">
                         <span className="bg-brand-yellow text-black px-2 py-0.5 rounded font-bold flex items-center gap-1">
                             <Star className="w-3 h-3 fill-black" /> {averageRating > 0 ? averageRating.toFixed(1) : "Nuevo"}
                         </span>
@@ -203,6 +237,14 @@ export default function StorePage() {
                         </span>
                         <span className="text-xs opacity-75">({reviews.length} reseñas)</span>
                     </div>
+
+                    <button
+                        onClick={handleOpenLocation}
+                        className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-white/30 transition-all active:scale-95"
+                    >
+                        <MapPin className="w-4 h-4 text-brand-yellow" />
+                        Ver en Google Maps
+                    </button>
                 </div>
             </div>
 
