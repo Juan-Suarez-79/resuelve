@@ -86,7 +86,7 @@ export default function SuperAdminDashboard() {
                                 return {
                                     id,
                                     name: store?.name || "Desconocida",
-                                    owner: store?.profiles?.full_name || "N/A",
+                                    owner: Array.isArray(store?.profiles) ? store?.profiles[0]?.full_name : (store?.profiles as any)?.full_name || "N/A",
                                     orders: storeOrderCounts[id]
                                 };
                             });
