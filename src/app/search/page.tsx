@@ -250,6 +250,7 @@ export default function SearchPage() {
                                     {results.stores.map((store) => (
                                         <Link href={`/store/${store.slug}`} key={store.id} className="block">
                                             <StoreCard
+                                                id={store.id}
                                                 name={store.name}
                                                 rating={store.average_rating || 0}
                                                 distance={store.distanceVal ? `${store.distanceVal.toFixed(1)} km` : "N/A"}

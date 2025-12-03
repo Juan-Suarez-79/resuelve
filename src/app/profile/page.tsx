@@ -7,7 +7,57 @@ import { User, LogOut, ShoppingBag, MapPin, Loader2, ArrowLeft, Heart } from "lu
 import Link from "next/link";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 
-import { Store } from "lucide-react";
+import { Store, Bell, BellOff } from "lucide-react";
+import { usePushNotifications } from "@/lib/hooks/use-push-notifications";
+
+function PushNotificationToggle() {
+    const { isSubscribed, subscribe, unsubscribe, loading, permission } = usePushNotifications();
+
+    const handleToggle = async () => {
+        if (isSubscribed) {
+            await unsubscribe();
+        } else {
+            await subscribe();
+        }
+    };
+
+    if (permission === 'denied') {
+        return (
+            <div className="w-full flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-gray-100 opacity-75">
+                <div className="w-12 h-12 bg-gray-100 text-gray-400 rounded-xl flex items-center justify-center">
+                    <BellOff className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                    <h3 className="font-bold text-gray-900 text-lg">Notificaciones Bloqueadas</h3>
+                    <p className="text-xs font-medium text-gray-500">Habilítalas en la configuración de tu navegador</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <button
+            onClick={handleToggle}
+            disabled={loading}
+            className="w-full flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-gray-100 active:scale-[0.98] hover:shadow-md transition-all group text-left"
+        >
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ${isSubscribed ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
+                {isSubscribed ? <Bell className="w-6 h-6" /> : <BellOff className="w-6 h-6" />}
+            </div>
+            <div className="flex-1">
+                <h3 className={`font-bold text-lg transition-colors ${isSubscribed ? 'text-gray-900 group-hover:text-purple-600' : 'text-gray-500'}`}>
+                    {isSubscribed ? 'Notificaciones Activadas' : 'Activar Notificaciones'}
+                </h3>
+                <p className="text-xs font-medium text-gray-500">
+                    {isSubscribed ? 'Recibirás alertas de pedidos y ofertas' : 'Toca para recibir alertas'}
+                </p>
+            </div>
+            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${isSubscribed ? 'bg-purple-600' : 'bg-gray-200'}`}>
+                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isSubscribed ? 'translate-x-6' : 'translate-x-0'}`} />
+            </div>
+        </button>
+    );
+}
 
 export default function ProfilePage() {
     const [user, setUser] = useState<any>(null);
@@ -142,6 +192,8 @@ export default function ProfilePage() {
                         </div>
                         <ArrowLeft className="w-5 h-5 text-gray-300 rotate-180 group-hover:text-pink-600 group-hover:translate-x-1 transition-all" />
                     </Link>
+
+                    <PushNotificationToggle />
                 </div>
 
                 {/* Logout */}

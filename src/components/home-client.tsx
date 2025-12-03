@@ -12,6 +12,8 @@ import dynamic from "next/dynamic";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 import { NotificationCenter } from "@/components/notification-center";
 
+import { HeroSection } from "@/components/hero-section";
+
 // Dynamic import for Map to reduce initial bundle size
 const MapWrapper = dynamic(() => import("@/components/map-wrapper"), {
     loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-3xl" />,
@@ -182,6 +184,11 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                 </div>
             </header>
 
+            {/* Hero Section */}
+            <div className="pt-4">
+                <HeroSection />
+            </div>
+
             {/* Categories */}
             <div className="px-4 py-4 overflow-x-auto no-scrollbar">
                 <div className="flex gap-3">
@@ -236,6 +243,7 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                                     <MotionWrapper key={store.id} delay={index * 0.1}>
                                         <Link href={`/store/${store.slug}`} className="block">
                                             <StoreCard
+                                                id={store.id}
                                                 name={store.name}
                                                 rating={store.average_rating || 0}
                                                 distance={store.distanceVal ? `${store.distanceVal.toFixed(1)} km` : "N/A"}
