@@ -64,11 +64,10 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                 .eq('is_open', true)
                 .eq('is_banned', false);
 
-            let ratingQuery = supabase
-                .from('stores_with_ratings')
-                .select('id, average_rating')
-                .eq('is_open', true)
-                .eq('is_banned', false);
+            // Fetch reviews instead of stores_with_ratings view
+            let reviewsQuery = supabase
+                .from('reviews')
+                .select('store_id, rating');
 
             let productQuery = supabase
                 .from('products')
@@ -77,26 +76,39 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
 
             if (activeCategory !== "all") {
                 storeQuery = storeQuery.eq('category', activeCategory);
-                ratingQuery = ratingQuery.eq('category', activeCategory);
+                // We can't easily filter reviews by category without a join, so we'll fetch all relevant reviews or filter later
+                // But for now, fetching all reviews is safer to ensure we have ratings for the stores we show
                 productQuery = productQuery.eq('stores.category', activeCategory);
             }
 
             if (searchQuery) {
                 productQuery = productQuery.ilike('title', `%${searchQuery}%`);
                 storeQuery = storeQuery.ilike('name', `%${searchQuery}%`);
-                ratingQuery = ratingQuery.ilike('name', `%${searchQuery}%`);
+                // reviewsQuery = reviewsQuery.ilike('name', `%${searchQuery}%`); // Reviews don't have name
             }
 
             const limit = searchQuery ? 100 : 20;
-            const [storesRes, ratingsRes, productsRes] = await Promise.all([
+            const [storesRes, reviewsRes, productsRes] = await Promise.all([
                 storeQuery,
-                ratingQuery,
+                reviewsQuery,
                 productQuery.limit(limit)
             ]);
 
             const storesData = storesRes.data;
-            const ratingsData = ratingsRes.data || [];
+            const reviewsData = reviewsRes.data || [];
             const productsData = productsRes.data;
+
+            // Calculate ratings map
+            const ratingsMap = new Map<string, { total: number; count: number }>();
+            reviewsData.forEach((review: any) => {
+                if (review.store_id && review.rating) {
+                    const current = ratingsMap.get(review.store_id) || { total: 0, count: 0 };
+                    ratingsMap.set(review.store_id, {
+                        total: current.total + review.rating,
+                        count: current.count + 1
+                    });
+                }
+            });
 
             if (storesData) {
                 let sortedStores = storesData.map((store: any) => {
@@ -104,7 +116,11 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                         ? calculateDistance(location.lat, location.lng, store.lat, store.lng)
                         : 9999;
                     const isBoosted = store.boost_expires_at && new Date(store.boost_expires_at) > new Date();
-                    const rating = ratingsData.find((r: any) => r.id === store.id)?.average_rating || 0;
+
+                    // Calculate rating from map
+                    const storeRatingData = ratingsMap.get(store.id);
+                    const rating = storeRatingData ? storeRatingData.total / storeRatingData.count : 0;
+
                     return { ...store, distanceVal: dist, isBoosted, average_rating: rating };
                 });
 

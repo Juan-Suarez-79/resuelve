@@ -53,6 +53,10 @@ export default function SearchPage() {
                 .eq('is_open', true)
                 .eq('is_banned', false); // Filter out banned stores
 
+            let reviewsQuery = supabase
+                .from('reviews')
+                .select('store_id, rating');
+
             // Text Search
             if (query) {
                 productQuery = productQuery.ilike('title', `%${query}%`);
@@ -69,13 +73,34 @@ export default function SearchPage() {
             if (priceRange.min) productQuery = productQuery.gte('price_usd', parseFloat(priceRange.min));
             if (priceRange.max) productQuery = productQuery.lte('price_usd', parseFloat(priceRange.max));
 
-            const [productsRes, storesRes] = await Promise.all([
+            const [productsRes, storesRes, reviewsRes] = await Promise.all([
                 productQuery.limit(20),
-                storeQuery.limit(20)
+                storeQuery.limit(20),
+                reviewsQuery
             ]);
 
             let products = productsRes.data || [];
             let stores = storesRes.data || [];
+            let reviews = reviewsRes.data || [];
+
+            // Calculate ratings map
+            const ratingsMap = new Map<string, { total: number; count: number }>();
+            reviews.forEach((review: any) => {
+                if (review.store_id && review.rating) {
+                    const current = ratingsMap.get(review.store_id) || { total: 0, count: 0 };
+                    ratingsMap.set(review.store_id, {
+                        total: current.total + review.rating,
+                        count: current.count + 1
+                    });
+                }
+            });
+
+            // Add ratings to stores
+            stores = stores.map((store: any) => {
+                const ratingData = ratingsMap.get(store.id);
+                const rating = ratingData ? ratingData.total / ratingData.count : 0;
+                return { ...store, average_rating: rating };
+            });
 
             // Sort Stores by Boost and then Distance
             stores = stores.map((store: any) => ({

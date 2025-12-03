@@ -21,14 +21,10 @@ export default async function Home() {
     .gt('boost_expires_at', now)
     .order('boost_expires_at', { ascending: true });
 
-  // 2. Fetch Top Rated IDs from VIEW
-  const topRatedIdsQuery = supabase
-    .from('stores_with_ratings')
-    .select('id, average_rating')
-    .eq('is_open', true)
-    .eq('is_banned', false)
-    .order('average_rating', { ascending: false })
-    .limit(4);
+  // 2. Fetch Reviews to calculate ratings (Replacement for VIEW)
+  const reviewsQuery = supabase
+    .from('reviews')
+    .select('store_id, rating');
 
   // Fetch Products
   let productQuery = supabase
@@ -37,34 +33,54 @@ export default async function Home() {
     .eq('stores.is_banned', false)
     .limit(10); // Limit initial products
 
-  const [boostedRes, topRatedIdsRes, productsRes] = await Promise.all([
+  const [boostedRes, reviewsRes, productsRes] = await Promise.all([
     boostedQuery,
-    topRatedIdsQuery,
+    reviewsQuery,
     productQuery
   ]);
 
   // Merge Stores Logic
   let finalStoresData: any[] = [];
   const boostedStores = boostedRes.data || [];
-  const topRatedIds = topRatedIdsRes.data || [];
+  const reviewsData = reviewsRes.data || [];
 
-  // Fetch details for top rated stores if we have any
-  let topRatedStores: any[] = [];
-  if (topRatedIds.length > 0) {
-    const { data: details } = await supabase
-      .from('stores')
-      .select('*')
-      .in('id', topRatedIds.map((r: any) => r.id));
-
-    if (details) {
-      // Merge rating back into details
-      topRatedStores = details.map((store: any) => ({
-        ...store,
-        average_rating: topRatedIds.find((r: any) => r.id === store.id)?.average_rating || 0
-      }));
-      // Re-sort because 'in' query doesn't preserve order
-      topRatedStores.sort((a: any, b: any) => b.average_rating - a.average_rating);
+  // Calculate ratings map
+  const ratingsMap = new Map<string, { total: number; count: number }>();
+  reviewsData.forEach((review: any) => {
+    if (review.store_id && review.rating) {
+      const current = ratingsMap.get(review.store_id) || { total: 0, count: 0 };
+      ratingsMap.set(review.store_id, {
+        total: current.total + review.rating,
+        count: current.count + 1
+      });
     }
+  });
+
+  // Get all store IDs that we might need (boosted + top rated candidates)
+  // Since we don't have a simple "top rated" query anymore without fetching all stores,
+  // we will fetch a batch of stores to sort by rating.
+  // For efficiency, let's fetch active stores.
+  const { data: allActiveStores } = await supabase
+    .from('stores')
+    .select('*')
+    .eq('is_open', true)
+    .eq('is_banned', false);
+
+  let topRatedStores: any[] = [];
+
+  if (allActiveStores) {
+    // Map ratings to stores
+    const storesWithRatings = allActiveStores.map((store: any) => {
+      const ratingData = ratingsMap.get(store.id);
+      const avgRating = ratingData ? ratingData.total / ratingData.count : 0;
+      return { ...store, average_rating: avgRating };
+    });
+
+    // Sort by rating desc
+    storesWithRatings.sort((a: any, b: any) => b.average_rating - a.average_rating);
+
+    // Take top 4
+    topRatedStores = storesWithRatings.slice(0, 4);
   }
 
   // Merge Stores Logic
@@ -89,8 +105,8 @@ export default async function Home() {
   finalStoresData = Array.from(storeMap.values());
 
   // Fallback if view doesn't exist (handle gracefully)
-  if (boostedRes.error || topRatedIdsRes.error) {
-    console.warn("Error fetching stores, falling back to simple query", boostedRes.error || topRatedIdsRes.error);
+  if (boostedRes.error || reviewsRes.error) {
+    console.warn("Error fetching stores, falling back to simple query", boostedRes.error || reviewsRes.error);
     const { data: fallbackData } = await supabase
       .from('stores')
       .select('*')

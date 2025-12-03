@@ -41,9 +41,9 @@ export function StoreCard({
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
 
-                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-sm">
+                <div className="absolute top-3 right-3 text-gray-600 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-sm">
                     <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                    {rating.toFixed(1)}
+                    {rating > 0 ? rating.toFixed(1) : "Nuevo"}
                 </div>
 
                 <div className="absolute bottom-3 left-3 text-white">
