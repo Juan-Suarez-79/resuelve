@@ -416,13 +416,15 @@ function PaymentMethodsList({ storeId }: { storeId: string | null }) {
                         <p className="font-bold text-gray-900 capitalize flex items-center gap-2">
                             {m.type === 'pago_movil' && '📱 Pago Móvil'}
                             {m.type === 'zelle' && '🇺🇸 Zelle'}
+                            {m.type === 'zinli' && '🟣 Zinli'}
                             {m.type === 'binance' && '🟡 Binance'}
                             {m.type === 'cash' && '💵 Efectivo'}
                         </p>
                         <p className="text-xs text-gray-500 mt-1 font-medium">
                             {m.type === 'pago_movil' ? `${m.details.bank} • ${m.details.phone}` :
                                 m.type === 'zelle' ? m.details.email :
-                                    m.type === 'binance' ? m.details.email : 'Pago al entregar'}
+                                    m.type === 'zinli' ? m.details.email :
+                                        m.type === 'binance' ? m.details.email : 'Pago al entregar'}
                         </p>
                     </div>
                     <button
@@ -496,6 +498,7 @@ function AddPaymentMethodModal({ storeId, onClose, onSuccess }: { storeId: strin
                             >
                                 <option value="pago_movil">Pago Móvil</option>
                                 <option value="zelle">Zelle</option>
+                                <option value="zinli">Zinli</option>
                                 <option value="binance">Binance</option>
                                 <option value="cash">Efectivo</option>
                             </select>
@@ -525,7 +528,7 @@ function AddPaymentMethodModal({ storeId, onClose, onSuccess }: { storeId: strin
                         </div>
                     )}
 
-                    {type === 'zelle' && (
+                    {(type === 'zelle' || type === 'zinli') && (
                         <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
                             <input
                                 placeholder="Correo Electrónico"

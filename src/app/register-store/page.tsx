@@ -312,6 +312,7 @@ export default function RegisterStorePage() {
                                             <option value="pago_movil">Pago Móvil</option>
                                             <option value="zelle">Zelle</option>
                                             <option value="binance">Binance</option>
+                                            <option value="zinli">Zinli</option>
                                             <option value="cash">Efectivo</option>
                                         </select>
 
@@ -323,8 +324,8 @@ export default function RegisterStorePage() {
                                                     <input placeholder="Teléfono" className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, phone: e.target.value })} />
                                                 </>
                                             )}
-                                            {newMethodType === 'zelle' && (
-                                                <input placeholder="Correo Zelle" className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, email: e.target.value })} />
+                                            {(newMethodType === 'zelle' || newMethodType === 'zinli') && (
+                                                <input placeholder={`Correo ${newMethodType === 'zelle' ? 'Zelle' : 'Zinli'}`} className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, email: e.target.value })} />
                                             )}
                                             {newMethodType === 'binance' && (
                                                 <input placeholder="Correo / Pay ID" className="w-full p-3 rounded-xl border border-gray-200 text-sm" onChange={e => setNewMethodDetails({ ...newMethodDetails, email: e.target.value })} />

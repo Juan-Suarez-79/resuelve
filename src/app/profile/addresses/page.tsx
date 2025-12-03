@@ -135,7 +135,7 @@ export default function AddressesPage() {
                 {/* Add Button */}
                 <button
                     onClick={() => setShowModal(true)}
-                    className="fixed bottom-8 right-8 bg-brand-red text-white w-16 h-16 rounded-full shadow-lg shadow-red-200 flex items-center justify-center active:scale-90 transition-transform z-40 hover:bg-red-700"
+                    className="fixed bottom-8 right-8 mb-12 bg-brand-red text-white w-16 h-16 rounded-full shadow-lg shadow-red-200 flex items-center justify-center active:scale-90 transition-transform z-40 hover:bg-red-700"
                 >
                     <Plus className="w-8 h-8" />
                 </button>

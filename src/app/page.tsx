@@ -11,6 +11,8 @@ import Image from "next/image";
 import MapWrapper from "@/components/map-wrapper";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 
+import { NotificationCenter } from "@/components/notification-center";
+
 const CATEGORIES = [
   { id: "all", label: "Todo", icon: "🛍️" },
   { id: "ropa", label: "Ropa", icon: "👕" },
@@ -126,6 +128,7 @@ export default function Home() {
               <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-brand-red" />
             </div>
           </div>
+          <NotificationCenter />
         </div>
 
         {/* Search Bar - Modern Input */}
