@@ -114,25 +114,11 @@ export default function KYCVerificationPage() {
                 return (
                     <div className="flex flex-col gap-2">
                         {profile?.cedula_photo_url ? (
-                            <a
-                                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/kyc-documents/${profile.cedula_photo_url}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 hover:underline"
-                            >
-                                <ExternalLink className="w-3 h-3" /> Ver Cédula
-                            </a>
+                            <DocumentLink path={profile.cedula_photo_url} label="Ver Cédula" />
                         ) : <span className="text-xs text-gray-600">Sin Cédula</span>}
 
                         {profile?.selfie_holding_id_url ? (
-                            <a
-                                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/kyc-documents/${profile.selfie_holding_id_url}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 hover:underline"
-                            >
-                                <ExternalLink className="w-3 h-3" /> Ver Selfie
-                            </a>
+                            <DocumentLink path={profile.selfie_holding_id_url} label="Ver Selfie" />
                         ) : <span className="text-xs text-gray-600">Sin Selfie</span>}
                     </div>
                 );
@@ -252,5 +238,34 @@ export default function KYCVerificationPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+function DocumentLink({ path, label }: { path: string, label: string }) {
+    const [url, setUrl] = useState<string | null>(null);
+    const supabase = createClient();
+
+    useEffect(() => {
+        async function getUrl() {
+            if (!path) return;
+            const { data } = await supabase.storage
+                .from('kyc-documents')
+                .createSignedUrl(path, 3600); // 1 hour
+            if (data) setUrl(data.signedUrl);
+        }
+        getUrl();
+    }, [path, supabase]);
+
+    if (!url) return <span className="text-xs text-gray-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Cargando...</span>;
+
+    return (
+        <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 hover:underline"
+        >
+            <ExternalLink className="w-3 h-3" /> {label}
+        </a>
     );
 }

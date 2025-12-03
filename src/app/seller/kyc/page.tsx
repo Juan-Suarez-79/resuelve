@@ -68,10 +68,11 @@ export default function KYCPage() {
             // Upload Cedula
             if (cedulaPhoto) {
                 const fileExt = cedulaPhoto.name.split('.').pop();
-                const fileName = `cedula-${userId}-${Date.now()}.${fileExt}`;
+                const fileName = `${userId}/cedula-${Date.now()}.${fileExt}`;
+                console.log('Uploading Cedula:', fileName, 'User:', userId);
                 const { error: uploadError, data } = await supabase.storage
                     .from('kyc-documents')
-                    .upload(fileName, cedulaPhoto);
+                    .upload(fileName, cedulaPhoto, { upsert: true });
 
                 if (uploadError) throw uploadError;
                 newCedulaUrl = data.path;
@@ -80,10 +81,11 @@ export default function KYCPage() {
             // Upload Selfie
             if (selfiePhoto) {
                 const fileExt = selfiePhoto.name.split('.').pop();
-                const fileName = `selfie-${userId}-${Date.now()}.${fileExt}`;
+                const fileName = `${userId}/selfie-${Date.now()}.${fileExt}`;
+                console.log('Uploading Selfie:', fileName, 'User:', userId);
                 const { error: uploadError, data } = await supabase.storage
                     .from('kyc-documents')
-                    .upload(fileName, selfiePhoto);
+                    .upload(fileName, selfiePhoto, { upsert: true });
 
                 if (uploadError) throw uploadError;
                 newSelfieUrl = data.path;

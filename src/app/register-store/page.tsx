@@ -8,6 +8,7 @@ import Link from "next/link";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 import MapWrapper from "@/components/map-wrapper";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 export default function RegisterStorePage() {
     const [step, setStep] = useState(1);
@@ -32,6 +33,9 @@ export default function RegisterStorePage() {
     const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
     const [newMethodType, setNewMethodType] = useState("pago_movil");
     const [newMethodDetails, setNewMethodDetails] = useState<any>({});
+
+    const [success, setSuccess] = useState(false);
+    const { toast } = useToast();
 
     const supabase = createClient();
     const router = useRouter();
@@ -156,17 +160,41 @@ export default function RegisterStorePage() {
             }
 
             // Success
-            alert("Solicitud enviada con éxito. Tu tienda está en revisión.");
-            router.push('/seller');
+            setSuccess(true);
 
         } catch (error: any) {
-            alert(error.message);
+            toast(error.message, "error");
             setLoading(false);
         }
     };
 
     if (initializing) {
         return <div className="min-h-screen flex justify-center items-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-brand-red" /></div>;
+    }
+
+    if (success) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+                <MotionWrapper className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl text-center border border-gray-100">
+                    <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-500">
+                        <CheckCircle2 className="w-12 h-12 text-green-500" />
+                    </div>
+                    <h1 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">¡Solicitud Enviada!</h1>
+                    <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+                        Hemos recibido tu solicitud correctamente. Tu tienda está ahora en proceso de <span className="text-gray-900 font-bold">revisión manual</span> para garantizar la seguridad de la plataforma.
+                    </p>
+                    <div className="bg-gray-50 rounded-2xl p-4 mb-8 text-sm text-gray-400 font-mono">
+                        Estado: Pendiente de Aprobación
+                    </div>
+                    <button
+                        onClick={() => router.push('/seller')}
+                        className="w-full bg-brand-red text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 hover:bg-red-700 transition-all active:scale-[0.98]"
+                    >
+                        Ir al Panel de Vendedor
+                    </button>
+                </MotionWrapper>
+            </div>
+        );
     }
 
     return (
@@ -335,7 +363,7 @@ export default function RegisterStorePage() {
                                 <button
                                     onClick={() => {
                                         if (storeName && phone && fullName && cedula && cedulaPhoto && selfiePhoto) setStep(2);
-                                        else alert("Por favor completa todos los campos, incluyendo las fotos de verificación.");
+                                        else toast("Por favor completa todos los campos, incluyendo las fotos de verificación.", "error");
                                     }}
                                     className="w-full bg-brand-red text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 transition-all mt-4"
                                 >
@@ -398,7 +426,7 @@ export default function RegisterStorePage() {
                                     <button
                                         onClick={() => {
                                             if (lat && lng) setStep(3);
-                                            else alert("Por favor selecciona una ubicación en el mapa");
+                                            else toast("Por favor selecciona una ubicación en el mapa", "error");
                                         }}
                                         className="flex-1 bg-brand-red text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 transition-all"
                                     >

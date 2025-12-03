@@ -241,9 +241,15 @@ export default function SellerDashboard() {
                             <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
                         </div>
                         <h2 className="text-2xl font-black text-gray-900 mb-3 leading-tight">Cuenta en Revisión</h2>
-                        <p className="text-gray-500 font-medium mb-8 leading-relaxed">
-                            Tu solicitud de vendedor está siendo revisada por nuestro equipo. Te notificaremos cuando sea aprobada para que puedas empezar a vender.
+                        <p className="text-gray-500 font-medium mb-6 leading-relaxed">
+                            Tu solicitud de vendedor está siendo revisada por nuestro equipo.
                         </p>
+                        <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 mb-6 text-left">
+                            <p className="text-sm text-yellow-800 font-bold mb-1">⚠️ Proceso Manual</p>
+                            <p className="text-xs text-yellow-700 leading-relaxed">
+                                La verificación puede tardar dado que es un proceso manual para asegurar la seguridad de la plataforma. Agradecemos tu paciencia.
+                            </p>
+                        </div>
                         <div className="p-4 bg-gray-50 rounded-xl text-xs text-gray-400 font-mono">
                             Estado: Pendiente de Aprobación
                         </div>
