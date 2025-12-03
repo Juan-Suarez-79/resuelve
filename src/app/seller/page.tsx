@@ -272,7 +272,7 @@ export default function SellerDashboard() {
             {approvalStatus === 'approved' && (
                 <Link
                     href="/seller/products/new"
-                    className="fixed bottom-24 right-6 w-16 h-16 bg-brand-red text-white rounded-full shadow-xl shadow-red-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-50 group"
+                    className="fixed bottom-36 right-6 w-16 h-16 bg-brand-red text-white rounded-full shadow-xl shadow-red-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-50 group"
                 >
                     <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
                 </Link>

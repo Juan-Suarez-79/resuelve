@@ -23,7 +23,7 @@ export function StoreCard({
     priority = false,
 }: StoreCardProps) {
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1 group">
+        <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1 group">
             <div className="relative h-40 w-full bg-gray-100 overflow-hidden">
                 {imageUrl ? (
                     <Image
@@ -33,6 +33,7 @@ export function StoreCard({
                         priority={priority}
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
+                        placeholder="empty" // Ideally use blur with blurDataURL if available
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full text-gray-400 bg-gray-50">
@@ -69,6 +70,6 @@ export function StoreCard({
                     </div>
                 </div>
             </div>
-        </div>
+        </article>
     );
 }

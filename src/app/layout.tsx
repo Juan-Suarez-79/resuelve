@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { SupportButton } from "@/components/support-button";
+import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,14 +16,67 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Resuelve - Tu mercado local",
-  description: "Conectando compradores y vendedores en Venezuela",
+  metadataBase: new URL('https://resuelve.app'),
+  title: {
+    default: "Resuelve - Tu mercado local",
+    template: "%s | Resuelve",
+  },
+  description: "Conectando compradores y vendedores en Venezuela. Encuentra productos, servicios y tiendas cerca de ti.",
   manifest: "/manifest.json",
+  keywords: ["mercado", "venezuela", "compras", "tiendas", "delivery", "coro"],
+  authors: [{ name: "Resuelve Team" }],
+  creator: "Resuelve",
+  publisher: "Resuelve",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: "Resuelve - Tu mercado local",
+    description: "Conectando compradores y vendedores en Venezuela.",
+    url: 'https://resuelve.app',
+    siteName: 'Resuelve',
+    locale: 'es_VE',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.jpg', // Ensure this image exists in public folder
+        width: 1200,
+        height: 630,
+        alt: 'Resuelve - Tu mercado local',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Resuelve - Tu mercado local",
+    description: "Conectando compradores y vendedores en Venezuela.",
+    images: ['/og-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#ffffff',
 };
 
 import { ToastProvider } from "@/components/ui/toast";
 
-import { SupportButton } from "@/components/support-button";
+
 
 export default function RootLayout({
   children,
@@ -39,6 +94,7 @@ export default function RootLayout({
             <SupportButton />
             <BottomNav />
           </div>
+          <Analytics />
         </ToastProvider>
       </body>
     </html>
