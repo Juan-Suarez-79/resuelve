@@ -15,6 +15,7 @@ interface ProductCardProps {
     storeName: string;
     storeId: string;
     storeSlug?: string;
+    priority?: boolean;
 }
 
 import Link from "next/link";
@@ -30,6 +31,7 @@ export function ProductCard({
     storeName,
     storeId,
     storeSlug,
+    priority = false,
 }: ProductCardProps) {
     const { addItem, items, clearCart } = useCart();
     const [isFavorite, setIsFavorite] = useState(false);
@@ -112,6 +114,8 @@ export function ProductCard({
                             src={imageUrl}
                             alt={title}
                             fill
+                            priority={priority}
+                            sizes="(max-width: 768px) 50vw, 33vw"
                             className="object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                     ) : (

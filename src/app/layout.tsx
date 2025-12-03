@@ -21,6 +21,8 @@ export const metadata: Metadata = {
 
 import { ToastProvider } from "@/components/ui/toast";
 
+import { SupportButton } from "@/components/support-button";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,6 +36,7 @@ export default function RootLayout({
         <ToastProvider>
           <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden">
             {children}
+            <SupportButton />
             <BottomNav />
           </div>
         </ToastProvider>

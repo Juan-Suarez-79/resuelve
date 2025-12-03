@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Plus, DollarSign, ShoppingBag, UserSquare2, MapPin } from "lucide-react";
+import { Loader2, Plus, DollarSign, ShoppingBag, UserSquare2, MapPin, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
+import { useToast } from "@/components/ui/toast";
 
 interface Order {
     id: string;
@@ -24,10 +25,12 @@ export default function SellerDashboard() {
     const [pendingCount, setPendingCount] = useState(0);
     const [totalOrders, setTotalOrders] = useState(0);
     const [sellerName, setSellerName] = useState("");
+    const [storeSlug, setStoreSlug] = useState("");
     const [approvalStatus, setApprovalStatus] = useState<string>('approved'); // Default to approved to avoid flash, or handle loading
     const [locationRequests, setLocationRequests] = useState(0);
     const supabase = createClient();
     const router = useRouter();
+    const { toast } = useToast();
 
     useEffect(() => {
         async function fetchData() {
@@ -38,23 +41,26 @@ export default function SellerDashboard() {
                     return;
                 }
 
-                // Fetch Profile Name
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('full_name')
-                    .eq('id', user.id)
-                    .single();
+                // Parallel Fetch: Profile & Store
+                const [profileRes, storeRes] = await Promise.all([
+                    supabase
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', user.id)
+                        .single(),
+                    supabase
+                        .from('stores')
+                        .select('id, approval_status, location_requests_count, slug')
+                        .eq('owner_id', user.id)
+                        .single()
+                ]);
+
+                const profile = profileRes.data;
+                const store = storeRes.data;
 
                 if (profile) {
                     setSellerName(profile.full_name || "Vendedor");
                 }
-
-                // Get Store ID & Approval Status
-                const { data: store } = await supabase
-                    .from('stores')
-                    .select('id, approval_status, location_requests_count')
-                    .eq('owner_id', user.id)
-                    .single();
 
                 if (!store) {
                     router.push('/seller/profile');
@@ -62,6 +68,7 @@ export default function SellerDashboard() {
                 }
 
                 if (store.location_requests_count) setLocationRequests(store.location_requests_count);
+                if (store.slug) setStoreSlug(store.slug);
 
                 // Fetch Orders
                 const { data: ordersData } = await supabase
@@ -96,6 +103,16 @@ export default function SellerDashboard() {
         fetchData();
     }, [supabase, router]);
 
+    const copyStoreLink = () => {
+        if (!storeSlug) {
+            toast("Tu tienda no tiene un link generado aún", "error");
+            return;
+        }
+        const url = `${window.location.origin}/store/${storeSlug}`;
+        navigator.clipboard.writeText(url);
+        toast("Link de tu tienda copiado al portapapeles", "success");
+    };
+
     if (loading) {
         return <div className="flex justify-center items-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-brand-red" /></div>;
     }
@@ -117,6 +134,13 @@ export default function SellerDashboard() {
                     <div>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight">Hola,</h1>
                         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-red to-red-600">{sellerName}!</h1>
+                        <button
+                            onClick={copyStoreLink}
+                            className="mt-2 text-xs font-bold text-gray-500 bg-white border border-gray-200 px-3 py-1.5 rounded-full flex items-center gap-1.5 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                        >
+                            <LinkIcon className="w-3 h-3" />
+                            Copiar Link Tienda
+                        </button>
                     </div>
                     <div className="text-right bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total Pedidos</p>

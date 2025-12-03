@@ -10,6 +10,7 @@ interface StoreCardProps {
     deliveryPrice: number;
     imageUrl: string;
     category: string;
+    priority?: boolean;
 }
 
 export function StoreCard({
@@ -19,6 +20,7 @@ export function StoreCard({
     deliveryPrice,
     imageUrl,
     category,
+    priority = false,
 }: StoreCardProps) {
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1 group">
@@ -28,6 +30,8 @@ export function StoreCard({
                         src={imageUrl}
                         alt={name}
                         fill
+                        priority={priority}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                 ) : (
@@ -38,8 +42,8 @@ export function StoreCard({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
 
                 <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-sm">
-                    <Star className="w-3.5 h-3.5 text-brand-yellow fill-brand-yellow" />
-                    {rating > 0 ? rating.toFixed(1) : "Nuevo"}
+                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                    {rating.toFixed(1)}
                 </div>
 
                 <div className="absolute bottom-3 left-3 text-white">

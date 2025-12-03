@@ -25,7 +25,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  turbopack: {},
+  turbopack: {
+    root: process.cwd(),
+  },
 };
 
-export default withPWA(nextConfig);
+const finalConfig = withPWA(nextConfig);
+
+// Remove deprecated middleware key if present to avoid warnings
+if (finalConfig.middleware) {
+  delete finalConfig.middleware;
+}
+
+export default finalConfig;

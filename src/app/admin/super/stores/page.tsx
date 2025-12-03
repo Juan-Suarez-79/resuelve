@@ -16,13 +16,15 @@ import {
     CheckCircle2,
     Loader2,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Link as LinkIcon
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 interface Store {
     id: string;
     name: string;
+    slug: string;
     owner_id: string;
     is_banned: boolean;
     is_verified: boolean;
@@ -166,6 +168,18 @@ export default function StoreManagementPage() {
     // Table Config
     const columnHelper = createColumnHelper<Store>();
 
+
+
+    const copyStoreLink = (slug: string) => {
+        if (!slug) {
+            toast("Esta tienda no tiene slug generado", "error");
+            return;
+        }
+        const url = `${window.location.origin}/store/${slug}`;
+        navigator.clipboard.writeText(url);
+        toast("Link copiado al portapapeles", "success");
+    };
+
     const columns = useMemo(() => [
         columnHelper.accessor("name", {
             header: "Tienda / Dueño",
@@ -275,6 +289,13 @@ export default function StoreManagementPage() {
                         title="Boost / Publicidad"
                     >
                         <Rocket className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => copyStoreLink(info.row.original.slug)}
+                        className="p-2 rounded-lg hover:bg-gray-800 text-gray-500 hover:text-blue-400 transition-colors"
+                        title="Copiar Link Tienda"
+                    >
+                        <LinkIcon className="w-4 h-4" />
                     </button>
                 </div>
             ),
