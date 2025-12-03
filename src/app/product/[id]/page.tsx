@@ -11,6 +11,8 @@ import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 
+import { ReviewForm } from "@/components/reviews/review-form";
+import { ReviewList } from "@/components/reviews/review-list";
 import { CartConflictModal } from "@/components/cart-conflict-modal";
 
 export default function ProductDetailsPage() {
@@ -25,6 +27,7 @@ export default function ProductDetailsPage() {
     const [quantity, setQuantity] = useState(1);
     const [isFavorite, setIsFavorite] = useState(false);
     const [showConflictModal, setShowConflictModal] = useState(false);
+    const [refreshReviews, setRefreshReviews] = useState(0);
 
     useEffect(() => {
         async function fetchProduct() {
@@ -156,31 +159,54 @@ export default function ProductDetailsPage() {
                     <p>{product.description || "Sin descripción disponible."}</p>
                 </div>
 
+                {/* Reviews Section */}
+                <div className="border-t border-gray-100 pt-8 mb-24">
+                    <h2 className="text-xl font-bold text-gray-900 mb-6">Reseñas</h2>
+                    <ReviewForm
+                        productId={product.id}
+                        storeId={product.store_id}
+                        onReviewSubmitted={() => setRefreshReviews(prev => prev + 1)}
+                    />
+                    <ReviewList
+                        productId={product.id}
+                        refreshTrigger={refreshReviews}
+                    />
+                </div>
+
                 {/* Quantity & Add */}
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 safe-area-bottom z-50">
                     <div className="max-w-md mx-auto flex gap-4 pb-12">
-                        <div className="flex items-center bg-gray-50 rounded-2xl border border-gray-200 px-2">
-                            <button
-                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-brand-red active:scale-90 transition-all"
-                            >
-                                <Minus className="w-5 h-5" />
-                            </button>
-                            <span className="w-8 text-center font-bold text-lg text-gray-900">{quantity}</span>
-                            <button
-                                onClick={() => setQuantity(quantity + 1)}
-                                className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-brand-red active:scale-90 transition-all"
-                            >
-                                <Plus className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <button
-                            onClick={handleAddToCart}
-                            className="flex-1 bg-brand-red text-white font-bold rounded-2xl shadow-lg shadow-red-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                        >
-                            <ShoppingBag className="w-5 h-5" />
-                            Agregar al Carrito
-                        </button>
+                        {product.stock_quantity > 0 ? (
+                            <>
+                                <div className="flex items-center bg-gray-50 rounded-2xl border border-gray-200 px-2">
+                                    <button
+                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                        className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-brand-red active:scale-90 transition-all"
+                                    >
+                                        <Minus className="w-5 h-5" />
+                                    </button>
+                                    <span className="w-8 text-center font-bold text-lg text-gray-900">{quantity}</span>
+                                    <button
+                                        onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                                        className={`w-10 h-10 flex items-center justify-center text-gray-600 hover:text-brand-red active:scale-90 transition-all ${quantity >= product.stock_quantity ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={quantity >= product.stock_quantity}
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={handleAddToCart}
+                                    className="flex-1 bg-brand-red text-white font-bold rounded-2xl shadow-lg shadow-red-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                >
+                                    <ShoppingBag className="w-5 h-5" />
+                                    Agregar al Carrito
+                                </button>
+                            </>
+                        ) : (
+                            <div className="w-full bg-gray-100 text-gray-400 font-bold py-4 rounded-2xl text-center cursor-not-allowed">
+                                Agotado
+                            </div>
+                        )}
                     </div>
                 </div>
             </MotionWrapper>

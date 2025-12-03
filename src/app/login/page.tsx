@@ -111,6 +111,12 @@ export default function LoginPage() {
                             Regístrate aquí
                         </Link>
                     </p>
+                    <p className="text-gray-600 mt-3">
+                        ¿Quieres vender?{" "}
+                        <Link href="/register-store" className="text-brand-red font-bold hover:underline">
+                            Registra tu tienda
+                        </Link>
+                    </p>
                 </div>
             </MotionWrapper>
         </WavyBackground>

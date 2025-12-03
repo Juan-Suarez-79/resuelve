@@ -143,7 +143,7 @@ export function ProductCard({
                             </Link>
                             <button
                                 onClick={handleAddToCart}
-                                className="flex-1 bg-brand-red text-white py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-100 active:scale-[0.98] hover:bg-red-700 transition-all"
+                                className="flex-1 bg-brand-red text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-0.5 shadow-lg shadow-red-100 active:scale-[0.98] hover:bg-red-700 transition-all"
                             >
                                 <Plus className="w-4 h-4" />
                                 Agregar

@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, ShoppingBag, ChevronRight, Package, Calendar, Clock } from "lucide-react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { formatCurrency } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Store, ChevronRight, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
+import Image from "next/image";
 
-export default function BuyerOrdersPage() {
+export default function OrdersPage() {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const supabase = createClient();
@@ -22,105 +23,125 @@ export default function BuyerOrdersPage() {
                 return;
             }
 
-            const { data: ordersData, error } = await supabase
+            const { data, error } = await supabase
                 .from('orders')
-                .select('*, stores(name)')
+                .select(`
+                    *,
+                    stores (name, image_url),
+                    order_items (*)
+                `)
                 .eq('buyer_id', user.id)
                 .order('created_at', { ascending: false });
 
-            if (ordersData) {
-                setOrders(ordersData);
+            if (error) {
+                console.error("Error fetching orders:", error);
+            } else {
+                setOrders(data || []);
             }
             setLoading(false);
         }
         fetchOrders();
     }, [supabase, router]);
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-700';
+            case 'accepted': return 'bg-blue-100 text-blue-700';
+            case 'completed': return 'bg-green-100 text-green-700';
+            case 'cancelled': return 'bg-red-100 text-red-700';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'pending': return 'Pendiente';
+            case 'accepted': return 'Aceptado';
+            case 'completed': return 'Completado';
+            case 'cancelled': return 'Cancelado';
+            default: return status;
+        }
+    };
+
     if (loading) {
         return <div className="flex justify-center items-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-brand-red" /></div>;
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32">
-            <MotionWrapper className="p-4 max-w-lg mx-auto">
-                {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <Link href="/profile" className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 text-gray-600 hover:text-brand-red transition-colors active:scale-95">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Mis Pedidos</h1>
-                </div>
+        <div className="min-h-screen bg-gray-50 pb-24">
+            {/* Header */}
+            <div className="bg-white p-4 sticky top-0 z-10 shadow-sm flex items-center gap-4">
+                <Link href="/profile" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <ArrowLeft className="w-6 h-6 text-gray-600" />
+                </Link>
+                <h1 className="text-xl font-bold text-gray-900">Mis Pedidos</h1>
+            </div>
 
-                {/* Order List */}
-                <div className="space-y-4">
-                    {orders.length === 0 ? (
-                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-10 text-center">
-                            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <ShoppingBag className="w-10 h-10 text-gray-300" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">No tienes pedidos</h3>
-                            <p className="text-gray-500 mb-6">Aún no has realizado ninguna compra. ¡Explora las tiendas y haz tu primer pedido!</p>
-                            <Link href="/" className="inline-flex items-center justify-center px-6 py-3 bg-brand-red text-white font-bold rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 transition-all active:scale-95">
-                                Explorar Tiendas
-                            </Link>
+            <div className="p-4 max-w-lg mx-auto space-y-4">
+                {orders.length === 0 ? (
+                    <div className="text-center py-20">
+                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Package className="w-10 h-10 text-gray-400" />
                         </div>
-                    ) : (
-                        orders.map((order) => (
-                            <Link
-                                key={order.id}
-                                href={`/profile/orders/${order.id}`}
-                                className="block bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md hover:scale-[1.01] transition-all group"
-                            >
+                        <h2 className="text-lg font-bold text-gray-900 mb-2">No tienes pedidos aún</h2>
+                        <p className="text-gray-500 text-sm mb-6">Explora las tiendas y realiza tu primera compra.</p>
+                        <Link href="/" className="bg-brand-red text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-red-200">
+                            Ir a comprar
+                        </Link>
+                    </div>
+                ) : (
+                    orders.map((order, index) => (
+                        <MotionWrapper key={order.id} delay={index * 0.05}>
+                            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 overflow-hidden">
+                                {/* Header: Store & Status */}
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red font-bold text-lg">
-                                            {order.stores?.name.charAt(0).toUpperCase()}
+                                        <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden relative">
+                                            {order.stores?.image_url ? (
+                                                <Image src={order.stores.image_url} alt={order.stores.name} fill className="object-cover" />
+                                            ) : (
+                                                <Store className="w-5 h-5 text-gray-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                            )}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-gray-900 text-lg leading-tight">{order.stores?.name || "Tienda"}</h3>
-                                            <p className="text-xs text-gray-500 font-mono mt-0.5">ID: #{order.id.slice(0, 8)}</p>
+                                            <h3 className="font-bold text-gray-900 text-sm">{order.stores?.name || "Tienda Desconocida"}</h3>
+                                            <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()} • {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                         </div>
                                     </div>
-                                    <span className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide shadow-sm
-                                        ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                                            order.status === 'paid' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                                                order.status === 'delivered' ? 'bg-green-100 text-green-800 border border-green-200' :
-                                                    'bg-gray-100 text-gray-800 border border-gray-200'
-                                        }`}>
-                                        {order.status === 'pending' ? 'Pendiente' :
-                                            order.status === 'paid' ? 'Pagado' :
-                                                order.status === 'delivered' ? 'Entregado' : order.status}
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${getStatusColor(order.status)}`}>
+                                        {getStatusLabel(order.status)}
                                     </span>
                                 </div>
 
-                                <div className="flex items-center gap-4 text-xs text-gray-500 mb-4 bg-gray-50 p-3 rounded-xl">
-                                    <div className="flex items-center gap-1.5">
-                                        <Calendar className="w-4 h-4 text-gray-400" />
-                                        {new Date(order.created_at).toLocaleDateString()}
-                                    </div>
-                                    <div className="w-px h-4 bg-gray-300"></div>
-                                    <div className="flex items-center gap-1.5">
-                                        <Clock className="w-4 h-4 text-gray-400" />
-                                        {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
+                                {/* Items Preview */}
+                                <div className="bg-gray-50 rounded-xl p-3 mb-4 space-y-2">
+                                    {order.order_items.slice(0, 2).map((item: any) => (
+                                        <div key={item.id} className="flex justify-between text-sm">
+                                            <span className="text-gray-600"><span className="font-bold text-gray-900">{item.quantity}x</span> {item.title}</span>
+                                            <span className="font-medium text-gray-900">{formatCurrency(item.price_at_time_usd, "USD")}</span>
+                                        </div>
+                                    ))}
+                                    {order.order_items.length > 2 && (
+                                        <p className="text-xs text-gray-400 font-medium italic">+ {order.order_items.length - 2} productos más...</p>
+                                    )}
                                 </div>
 
+                                {/* Footer: Total & Action */}
                                 <div className="flex justify-between items-center pt-2 border-t border-gray-50">
                                     <div>
-                                        <p className="text-xs text-gray-400 font-medium mb-0.5">Total</p>
-                                        <span className="font-black text-xl text-gray-900">
-                                            {formatCurrency(order.total_usd, 'USD')}
-                                        </span>
+                                        <p className="text-xs text-gray-400 font-bold uppercase">Total</p>
+                                        <p className="text-lg font-black text-brand-red">{formatCurrency(order.total_usd, "USD")}</p>
                                     </div>
-                                    <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-brand-red group-hover:text-white transition-colors">
-                                        <ChevronRight className="w-5 h-5" />
-                                    </div>
+                                    {/* Future: Link to details page */}
+                                    {/* <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+                                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                                    </button> */}
                                 </div>
-                            </Link>
-                        ))
-                    )}
-                </div>
-            </MotionWrapper>
+                            </div>
+                        </MotionWrapper>
+                    ))
+                )}
+            </div>
         </div>
     );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, TrendingUp, DollarSign, Calendar, Package, Loader2, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getExchangeRate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 export default function EarningsPage() {
@@ -18,6 +18,7 @@ export default function EarningsPage() {
     });
     const [topProducts, setTopProducts] = useState<any[]>([]);
     const [weeklyData, setWeeklyData] = useState<any[]>([]);
+    const [exchangeRate, setExchangeRate] = useState(0);
     const supabase = createClient();
     const router = useRouter();
 
@@ -28,6 +29,9 @@ export default function EarningsPage() {
                 router.push('/login');
                 return;
             }
+
+            const rate = await getExchangeRate();
+            setExchangeRate(rate);
 
             // Get Store ID
             const { data: store } = await supabase
@@ -154,6 +158,7 @@ export default function EarningsPage() {
                             <span className="text-xs font-medium uppercase tracking-wider">Hoy</span>
                         </div>
                         <p className="text-2xl font-bold">{formatCurrency(metrics.today, 'USD')}</p>
+                        <p className="text-xs font-medium opacity-80 mt-1">≈ {formatCurrency(metrics.today * exchangeRate, 'VES')}</p>
                     </div>
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex items-center gap-2 mb-2 text-gray-500">
@@ -161,6 +166,7 @@ export default function EarningsPage() {
                             <span className="text-xs font-medium uppercase tracking-wider">Esta Semana</span>
                         </div>
                         <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.week, 'USD')}</p>
+                        <p className="text-xs font-medium text-gray-400 mt-1">≈ {formatCurrency(metrics.week * exchangeRate, 'VES')}</p>
                     </div>
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex items-center gap-2 mb-2 text-gray-500">
@@ -168,6 +174,7 @@ export default function EarningsPage() {
                             <span className="text-xs font-medium uppercase tracking-wider">Este Mes</span>
                         </div>
                         <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.month, 'USD')}</p>
+                        <p className="text-xs font-medium text-gray-400 mt-1">≈ {formatCurrency(metrics.month * exchangeRate, 'VES')}</p>
                     </div>
                     <div className="bg-gray-900 p-5 rounded-2xl text-white shadow-lg">
                         <div className="flex items-center gap-2 mb-2 opacity-90">
@@ -175,6 +182,7 @@ export default function EarningsPage() {
                             <span className="text-xs font-medium uppercase tracking-wider">Total Anual</span>
                         </div>
                         <p className="text-2xl font-bold">{formatCurrency(metrics.year, 'USD')}</p>
+                        <p className="text-xs font-medium opacity-80 mt-1">≈ {formatCurrency(metrics.year * exchangeRate, 'VES')}</p>
                     </div>
                 </div>
 
@@ -226,10 +234,7 @@ export default function EarningsPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-gray-900 text-sm">{formatCurrency(product.revenue, 'USD')}</p>
-                                        <p className="text-xs text-green-600 flex items-center justify-end gap-0.5">
-                                            <ArrowUpRight className="w-3 h-3" />
-                                            Generado
-                                        </p>
+                                        <p className="text-xs text-gray-400">≈ {formatCurrency(product.revenue * exchangeRate, 'VES')}</p>
                                     </div>
                                 </div>
                             ))

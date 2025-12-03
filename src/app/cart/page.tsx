@@ -24,6 +24,7 @@ export default function CartPage() {
     const [exchangeRate, setExchangeRate] = useState(0);
     const [deliveryFee, setDeliveryFee] = useState(0);
     const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+    const [storeLocation, setStoreLocation] = useState<{ lat: number, lng: number } | null>(null);
 
     const supabase = createClient();
     const subtotal = totalUsd();
@@ -58,14 +59,19 @@ export default function CartPage() {
 
                 if (methods) setStorePaymentMethods(methods);
 
-                // Fetch Store Delivery Fee
+                // Fetch Store Delivery Fee & Location
                 const { data: store } = await supabase
                     .from('stores')
-                    .select('delivery_fee')
+                    .select('delivery_fee, lat, lng')
                     .eq('id', firstStoreId)
                     .single();
 
-                if (store) setDeliveryFee(store.delivery_fee || 0);
+                if (store) {
+                    setDeliveryFee(store.delivery_fee || 0);
+                    if (store.lat && store.lng) {
+                        setStoreLocation({ lat: store.lat, lng: store.lng });
+                    }
+                }
 
                 setLoadingMethods(false);
             }
@@ -211,7 +217,7 @@ export default function CartPage() {
                                 </Link>
                                 <div className="flex flex-col">
                                     <span className="font-extrabold text-brand-red text-lg">{formatCurrency(item.priceUsd, "USD")}</span>
-                                    <span className="text-xs font-medium text-gray-500">≈ {formatCurrency(item.priceUsd * exchangeRate, "VES")}</span>
+                                    <span className="text-sm font-bold text-gray-600">≈ {formatCurrency(item.priceUsd * exchangeRate, "VES")}</span>
                                 </div>
                             </div>
                             <div className="flex flex-col items-center gap-1 bg-gray-50 rounded-xl p-1.5 border border-gray-100">
@@ -308,6 +314,21 @@ export default function CartPage() {
                                     rows={3}
                                     className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none bg-gray-50 resize-none transition-all font-medium text-gray-900"
                                 />
+                            </div>
+                        )}
+
+                        {deliveryMethod === 'pickup' && storeLocation && (
+                            <div className="mt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <button
+                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${storeLocation.lat},${storeLocation.lng}`, '_blank')}
+                                    className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors border border-blue-100"
+                                >
+                                    <MapPin className="w-4 h-4" />
+                                    Ver ubicación del negocio
+                                </button>
+                                <p className="text-xs text-gray-400 text-center mt-2">
+                                    Te redirigiremos a Google Maps para ver la ubicación exacta.
+                                </p>
                             </div>
                         )}
                     </div>
@@ -409,7 +430,7 @@ export default function CartPage() {
                         <p className="text-white text-sm font-medium mb-4 relative z-10">
                             Gestiona tu negocio como <span className="font-bold text-brand-red">{items[0]?.storeName || "esta tienda"}</span> usando Resuelve.
                         </p>
-                        <Link href="/signup?role=seller" className="inline-block text-xs bg-white text-gray-900 px-5 py-2.5 rounded-full font-bold hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all shadow-lg relative z-10">
+                        <Link href="/register-store" className="inline-block text-xs bg-white text-gray-900 px-5 py-2.5 rounded-full font-bold hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all shadow-lg relative z-10">
                             Registra tu tienda aquí
                         </Link>
                     </div>
@@ -420,14 +441,14 @@ export default function CartPage() {
                             <span className="text-gray-500 text-sm font-medium">Subtotal</span>
                             <div className="text-right">
                                 <div className="font-bold text-gray-900">{formatCurrency(subtotal, "USD")}</div>
-                                <div className="text-xs text-gray-400 font-medium">{formatCurrency(subtotal * exchangeRate, "VES")}</div>
+                                <div className="text-sm text-gray-500 font-medium">{formatCurrency(subtotal * exchangeRate, "VES")}</div>
                             </div>
                         </div>
                         <div className="flex justify-between items-center mb-5">
                             <span className="text-gray-500 text-sm font-medium">Delivery Fee</span>
                             <div className="text-right">
                                 <div className="font-bold text-gray-900">{formatCurrency(finalDeliveryFee, "USD")}</div>
-                                <div className="text-xs text-gray-400 font-medium">{formatCurrency(finalDeliveryFee * exchangeRate, "VES")}</div>
+                                <div className="text-sm text-gray-500 font-medium">{formatCurrency(finalDeliveryFee * exchangeRate, "VES")}</div>
                             </div>
                         </div>
                         <div className="border-t border-gray-100 pt-5 flex justify-between items-center">
@@ -440,7 +461,7 @@ export default function CartPage() {
                                     </button>
                                 </div>
                                 <div className="flex items-center justify-end gap-2">
-                                    <div className="text-sm font-bold text-gray-500">{formatCurrency(total * exchangeRate, "VES")}</div>
+                                    <div className="text-lg font-bold text-gray-700">{formatCurrency(total * exchangeRate, "VES")}</div>
                                     <button onClick={() => copyToClipboard((total * exchangeRate).toFixed(2))} className="p-1 bg-gray-100 text-gray-500 rounded-md hover:bg-gray-200 transition-colors" title="Copiar monto en VES">
                                         <Copy className="w-3 h-3" />
                                     </button>

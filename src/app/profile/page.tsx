@@ -65,7 +65,10 @@ export default function ProfilePage() {
                     </div>
                     <div className="relative z-10">
                         <h2 className="font-bold text-xl text-gray-900 mb-1">{user?.user_metadata?.full_name || "Usuario"}</h2>
-                        <p className="text-gray-500 text-sm font-medium">{user?.email}</p>
+                        <p className="text-gray-500 text-sm font-medium mb-3">{user?.email}</p>
+                        <Link href="/profile/edit" className="inline-flex items-center gap-1 text-xs font-bold text-brand-red bg-red-50 px-3 py-1.5 rounded-full hover:bg-red-100 transition-colors">
+                            Editar Perfil
+                        </Link>
                     </div>
                 </div>
 

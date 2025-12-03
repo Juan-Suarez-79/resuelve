@@ -5,10 +5,18 @@ interface Location {
     lng: number;
 }
 
+export const CORO_COORDS = {
+    lat: 11.4095,
+    lng: -69.6817
+};
+
+export const MAX_DISTANCE_KM = 30; // 30km radius around Coro
+
 export function useGeolocation() {
     const [location, setLocation] = useState<Location | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isInRegion, setIsInRegion] = useState(true); // Default to true until checked
 
     useEffect(() => {
         if (!navigator.geolocation) {
@@ -19,10 +27,15 @@ export function useGeolocation() {
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                setLocation({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                });
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                setLocation({ lat, lng });
+
+                // Check if in region
+                const dist = calculateDistance(lat, lng, CORO_COORDS.lat, CORO_COORDS.lng);
+                setIsInRegion(dist <= MAX_DISTANCE_KM);
+
                 setLoading(false);
             },
             (err) => {
@@ -32,7 +45,7 @@ export function useGeolocation() {
         );
     }, []);
 
-    return { location, error, loading };
+    return { location, error, loading, isInRegion };
 }
 
 // Haversine formula to calculate distance in km
@@ -47,6 +60,11 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c; // Distance in km
     return d;
+}
+
+export function isLocationInCoro(lat: number, lng: number): boolean {
+    const dist = calculateDistance(lat, lng, CORO_COORDS.lat, CORO_COORDS.lng);
+    return dist <= MAX_DISTANCE_KM;
 }
 
 function deg2rad(deg: number) {

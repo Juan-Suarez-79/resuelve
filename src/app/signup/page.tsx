@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Loader2, ArrowLeft, Mail, Lock, User, Phone, MapPin } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, Lock, User, Phone } from "lucide-react";
 import { WavyBackground } from "@/components/ui/wavy-background";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,6 @@ function SignupForm() {
     const [password, setPassword] = useState("");
     const [fullName, setFullName] = useState("");
     const [phone, setPhone] = useState("");
-    const [address, setAddress] = useState("");
     const [role, setRole] = useState<"buyer" | "seller">(initialRole);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -37,7 +36,6 @@ function SignupForm() {
                 data: {
                     full_name: fullName,
                     phone: phone,
-                    address: address,
                     role: role
                 }
             }
@@ -50,22 +48,8 @@ function SignupForm() {
         }
 
         if (authData.user) {
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: authData.user.id,
-                    full_name: fullName,
-                    role: role,
-                    phone: phone,
-                    address: address
-                });
-
-            if (profileError) {
-                setError("Error creando perfil: " + profileError.message);
-                setLoading(false);
-            } else {
-                router.push('/welcome');
-            }
+            // Profile is created automatically by database trigger
+            router.push('/welcome');
         }
     };
 
@@ -162,17 +146,7 @@ function SignupForm() {
                         className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
                     />
                 </div>
-                <div className="relative group">
-                    <MapPin className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
-                    <input
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        required
-                        placeholder="Dirección"
-                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-400 font-medium text-gray-900"
-                    />
-                </div>
+
 
                 <div className="flex items-start gap-2 mb-4 pt-2">
                     <input

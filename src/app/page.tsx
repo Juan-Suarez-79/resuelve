@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, ChevronDown, Loader2, Search, X } from "lucide-react";
+import { MapPin, ChevronDown, Loader2, Search, X, MapPinned } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { StoreCard } from "@/components/store-card";
 import { createClient } from "@/lib/supabase/client";
-import { useGeolocation, calculateDistance } from "@/lib/hooks/use-geolocation";
+import { useGeolocation, calculateDistance, isLocationInCoro, CORO_COORDS } from "@/lib/hooks/use-geolocation";
 import Link from "next/link";
 import Image from "next/image";
 import MapWrapper from "@/components/map-wrapper";
@@ -15,7 +15,7 @@ const CATEGORIES = [
   { id: "all", label: "Todo", icon: "🛍️" },
   { id: "ropa", label: "Ropa", icon: "👕" },
   { id: "comida", label: "Comida", icon: "🍔" },
-  { id: "servicios", label: "Servicios", icon: "🔧" },
+  { id: "servicios", label: "Servicios", icon: "💅" },
   { id: "repuestos", label: "Repuestos", icon: "⚙️" },
 ];
 
@@ -25,12 +25,16 @@ export default function Home() {
   const [stores, setStores] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { location: geoLoc, loading: geoLoading } = useGeolocation();
+  const { location: geoLoc, loading: geoLoading, isInRegion: geoInRegion } = useGeolocation();
   const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [sortBy, setSortBy] = useState<'distance' | 'rating'>('distance');
 
   const location = manualLocation || geoLoc;
+  const isLocationValid = manualLocation
+    ? isLocationInCoro(manualLocation.lat, manualLocation.lng)
+    : (geoLoc ? geoInRegion : true); // If no location yet, assume valid or wait
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -45,12 +49,12 @@ export default function Home() {
       // Fetch Products
       let productQuery = supabase
         .from('products')
-        .select('*, stores(name, exchange_rate_bs)');
+        .select('*, stores!inner(name, exchange_rate_bs, category)');
 
       // Apply Filters
       if (activeCategory !== "all") {
         storeQuery = storeQuery.eq('category', activeCategory);
-        productQuery = productQuery.eq('category', activeCategory);
+        productQuery = productQuery.eq('stores.category', activeCategory);
       }
 
       if (searchQuery) {
@@ -258,6 +262,30 @@ export default function Home() {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Region Restriction Modal */}
+      {!isLocationValid && !geoLoading && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MapPinned className="w-10 h-10 text-brand-red" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-3 leading-tight">Fuera de Zona</h2>
+            <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+              Lo sentimos, <strong>Resuelve</strong> solo está disponible actualmente en <strong>Coro, Falcón</strong>.
+            </p>
+            <button
+              onClick={() => {
+                setManualLocation(CORO_COORDS);
+                setShowMap(true);
+              }}
+              className="w-full bg-brand-red text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 active:scale-[0.98] transition-all"
+            >
+              Seleccionar Ubicación en Coro
+            </button>
           </div>
         </div>
       )}
