@@ -16,6 +16,8 @@ interface ProductCardProps {
     storeId: string;
     storeSlug?: string;
     priority?: boolean;
+    inStock?: boolean;
+    isStoreOpen?: boolean;
 }
 
 import Link from "next/link";
@@ -32,6 +34,8 @@ export function ProductCard({
     storeId,
     storeSlug,
     priority = false,
+    inStock = true,
+    isStoreOpen = true,
 }: ProductCardProps) {
     const { addItem, items, clearCart } = useCart();
     const [isFavorite, setIsFavorite] = useState(false);
@@ -65,6 +69,16 @@ export function ProductCard({
     };
 
     const handleAddToCart = () => {
+        if (!isStoreOpen) {
+            toast("La tienda se encuentra cerrada en este momento", "error");
+            return;
+        }
+
+        if (!inStock) {
+            toast("El producto que intenta seleccionar se encuentra agotado", "error");
+            return;
+        }
+
         if (items.length > 0 && items[0].storeId !== storeId) {
             setShowConflictModal(true);
             return;
@@ -101,7 +115,7 @@ export function ProductCard({
                 currentStoreName={items[0]?.storeName || "otra tienda"}
                 newStoreName={storeName}
             />
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full relative group hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1">
+            <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full relative group hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1 ${(!inStock || !isStoreOpen) ? 'opacity-75' : ''}`}>
                 <button
                     onClick={toggleFavorite}
                     className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm active:scale-90 transition-all hover:bg-red-50"
@@ -116,7 +130,7 @@ export function ProductCard({
                             fill
                             priority={priority}
                             sizes="(max-width: 768px) 50vw, 33vw"
-                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                            className={`object-cover group-hover:scale-110 transition-transform duration-500 ${(!inStock || !isStoreOpen) ? 'grayscale' : ''}`}
                         />
                     ) : (
                         <div className="flex items-center justify-center h-full text-gray-300 bg-gray-50">
@@ -125,6 +139,22 @@ export function ProductCard({
                     )}
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {!isStoreOpen && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px] z-20">
+                            <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                                Cerrado
+                            </span>
+                        </div>
+                    )}
+
+                    {(!inStock && isStoreOpen) && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px]">
+                            <span className="bg-black/70 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md">
+                                Agotado
+                            </span>
+                        </div>
+                    )}
                 </Link>
                 <div className="p-4 flex flex-col flex-grow">
                     <Link href={`/product/${id}`}>
@@ -150,10 +180,14 @@ export function ProductCard({
                             </Link>
                             <button
                                 onClick={handleAddToCart}
-                                className="flex-1 bg-brand-red text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-0.5 shadow-lg shadow-red-100 active:scale-[0.98] hover:bg-red-700 transition-all"
+                                disabled={!inStock || !isStoreOpen}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-0.5 shadow-lg transition-all ${inStock && isStoreOpen
+                                    ? 'bg-brand-red text-white shadow-red-100 active:scale-[0.98] hover:bg-red-700'
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                    }`}
                             >
                                 <Plus className="w-4 h-4" />
-                                Agregar
+                                {!isStoreOpen ? 'Cerrado' : (inStock ? 'Agregar' : 'Agotado')}
                             </button>
                         </div>
                     </div>

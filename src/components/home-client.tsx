@@ -63,7 +63,7 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
             let storeQuery = supabase
                 .from('stores')
                 .select('*')
-                .eq('is_open', true)
+                // .eq('is_open', true) // Show closed stores too
                 .eq('is_banned', false);
 
             // Fetch reviews instead of stores_with_ratings view
@@ -73,7 +73,7 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
 
             let productQuery = supabase
                 .from('products')
-                .select('*, stores!inner(name, exchange_rate_bs, category, is_banned, slug)')
+                .select('*, stores!inner(name, exchange_rate_bs, category, is_banned, slug, is_open)')
                 .eq('stores.is_banned', false);
 
             if (activeCategory !== "all") {
@@ -251,6 +251,7 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                                                 imageUrl={store.image_url}
                                                 category={store.category || "General"}
                                                 priority={index < 4}
+                                                isOpen={store.is_open}
                                             />
                                         </Link>
                                     </MotionWrapper>
@@ -280,6 +281,8 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                                             storeId={product.store_id}
                                             storeSlug={product.stores?.slug}
                                             priority={index < 4}
+                                            inStock={product.in_stock}
+                                            isStoreOpen={product.stores?.is_open}
                                         />
                                     </MotionWrapper>
                                 ))}

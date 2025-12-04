@@ -44,13 +44,13 @@ export default function SearchPage() {
         try {
             let productQuery = supabase
                 .from('products')
-                .select('*, stores!inner(id, name, exchange_rate_bs, lat, lng, is_banned, slug)')
+                .select('*, stores!inner(id, name, exchange_rate_bs, lat, lng, is_banned, slug, is_open)')
                 .eq('stores.is_banned', false); // Filter out products from banned stores
 
             let storeQuery = supabase
                 .from('stores')
                 .select('*')
-                .eq('is_open', true)
+                // .eq('is_open', true) // Show closed stores too
                 .eq('is_banned', false); // Filter out banned stores
 
             let reviewsQuery = supabase
@@ -238,6 +238,8 @@ export default function SearchPage() {
                                             storeName={product.stores?.name || "Tienda"}
                                             storeId={product.store_id}
                                             storeSlug={product.stores?.slug}
+                                            inStock={product.in_stock}
+                                            isStoreOpen={product.stores?.is_open}
                                         />
                                     ))}
                                 </div>
@@ -257,6 +259,7 @@ export default function SearchPage() {
                                                 deliveryPrice={store.delivery_fee || 0}
                                                 imageUrl={store.image_url}
                                                 category={store.category || "General"}
+                                                isOpen={store.is_open}
                                             />
                                         </Link>
                                     ))}

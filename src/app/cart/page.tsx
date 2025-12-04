@@ -142,7 +142,7 @@ export default function CartPage() {
         const phoneStore = store?.phone_number || "584120000000";
 
         const itemsList = items
-            .map((item) => "- " + item.quantity + "x " + item.title + " ($" + item.priceUsd + ")")
+            .map((item) => `▫️ ${item.quantity}x ${item.title} ($${item.priceUsd})`)
             .join("\n");
 
         const paymentLabel = paymentMethod === 'pago_movil' ? 'Pago Móvil' :
@@ -150,22 +150,31 @@ export default function CartPage() {
                 paymentMethod === 'binance' ? 'Binance' : 'Efectivo';
 
         const storeTotalBs = storeTotalUsd * exchangeRate;
-        let message = "*Hola, quiero procesar el siguiente pedido:*\n\n" + itemsList + "\n\n";
-        message += `*Total: $${storeTotalUsd.toFixed(2)} / Bs ${storeTotalBs.toFixed(2)}*\n\n`;
 
-        message += "*Método de pago:* " + paymentLabel + "\n";
+        // Get Order ID safely (handle if it's an array or object)
+        const orderId = Array.isArray(order) ? order[0]?.id : order?.id;
+        const orderIdText = orderId ? `🆔 *Pedido #:* ${orderId.slice(0, 8)}\n` : '';
 
+        let message = `*¡Hola! Quiero confirmar mi pedido en Resuelve.* 🛍️\n\n`;
+        message += orderIdText;
+        message += `📋 *Detalle del Pedido:*\n${itemsList}\n\n`;
+        message += `💵 *Total a Pagar:*\n*$${storeTotalUsd.toFixed(2)} USD* / *Bs ${storeTotalBs.toFixed(2)}*\n\n`;
+
+        message += `💳 *Método de Pago:* ${paymentLabel}\n`;
         if (['zelle', 'pago_movil', 'binance'].includes(paymentMethod)) {
-            message += "Adjunto captura del pago en un momento.\n";
+            message += `_(Adjuntaré el comprobante en breve)_\n\n`;
+        } else {
+            message += `\n`;
         }
 
-        message += "*Método de entrega:* " + (deliveryMethod === 'delivery' ? 'Delivery' : 'Pick Up') + "\n";
+        const deliveryLabel = deliveryMethod === 'delivery' ? 'Delivery 🛵' : 'Pick Up 🏪';
+        message += `🚚 *Entrega:* ${deliveryLabel}\n`;
 
         if (deliveryMethod === 'delivery') {
-            message += "Adjunto mi ubicación en un momento.\n";
-            message += "Mi dirección escrita es: " + address;
+            message += `📍 *Dirección:* ${address}\n`;
+            message += `_(Enviaré mi ubicación actual por aquí)_`;
         } else {
-            message += "Por favor envíame la ubicación para retirar.";
+            message += `_Quedo atento a la ubicación para retirar._`;
         }
 
         const waLink = generateWhatsAppLink(phoneStore, message);

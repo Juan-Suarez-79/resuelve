@@ -31,6 +31,7 @@ export default function StorePage() {
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState("");
     const [submittingReport, setSubmittingReport] = useState(false);
+    const [showReviewsList, setShowReviewsList] = useState(false);
 
     useEffect(() => {
         async function fetchStoreData() {
@@ -63,22 +64,43 @@ export default function StorePage() {
                 return;
             }
 
+            // Fetch Dollar Rate
+            let currentRate = null;
+            try {
+                const rateRes = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+                if (rateRes.ok) {
+                    const rateData = await rateRes.json();
+                    // The API returns the object directly with a 'promedio' or 'price' field, 
+                    // or sometimes just the object if it's the specific endpoint.
+                    // Based on common usage of this API:
+                    currentRate = rateData.promedio || rateData.price || rateData.value;
+                }
+            } catch (e) {
+                console.error("Failed to fetch dynamic rate", e);
+            }
+
             setStore(storeData);
+
+            // Update exchange rate if dynamic fetch worked
+            if (currentRate && storeData) {
+                storeData.exchange_rate_bs = currentRate;
+                setStore({ ...storeData });
+            }
             const storeId = storeData.id;
 
             // Fetch Products
             const { data: productsData } = await supabase
                 .from('products')
                 .select('*')
-                .eq('store_id', storeId)
-                .eq('in_stock', true);
+                .eq('store_id', storeId);
+            // .eq('in_stock', true); // Show all products even if out of stock
 
             if (productsData) setProducts(productsData);
 
             // Fetch Reviews
             const { data: reviewsData } = await supabase
                 .from('reviews')
-                .select('*, profiles(full_name)')
+                .select('*')
                 .eq('store_id', storeId)
                 .order('created_at', { ascending: false });
 
@@ -276,6 +298,8 @@ export default function StorePage() {
                                 exchangeRate={store.exchange_rate_bs}
                                 storeName={store.name}
                                 storeId={store.id}
+                                inStock={product.in_stock}
+                                isStoreOpen={store.is_open}
                             />
                         ))}
                     </div>
@@ -284,23 +308,34 @@ export default function StorePage() {
                 {/* Reviews Section */}
                 {reviews.length > 0 && (
                     <div className="mt-8">
-                        <h2 className="font-bold text-gray-900 mb-4">Reseñas de Clientes</h2>
-                        <div className="space-y-4">
-                            {reviews.map((review) => (
-                                <div key={review.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-sm text-gray-900">Usuario</span>
-                                        <div className="flex items-center gap-0.5">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                    {review.comment && <p className="text-sm text-gray-600 italic">"{review.comment}"</p>}
-                                    <p className="text-xs text-gray-400 mt-2">{new Date(review.created_at).toLocaleDateString()}</p>
-                                </div>
-                            ))}
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="font-bold text-gray-900">Reseñas de Clientes</h2>
+                            <button
+                                onClick={() => setShowReviewsList(!showReviewsList)}
+                                className="text-sm font-bold text-brand-red hover:underline transition-all"
+                            >
+                                {showReviewsList ? "Ocultar Reseñas" : "Ver Reseñas"}
+                            </button>
                         </div>
+
+                        {showReviewsList && (
+                            <div className="space-y-4 animate-in slide-in-from-top-2 fade-in duration-300">
+                                {reviews.map((review) => (
+                                    <div key={review.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="font-bold text-sm text-gray-900">Usuario</span>
+                                            <div className="flex items-center gap-0.5">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {review.comment && <p className="text-sm text-gray-600 italic">"{review.comment}"</p>}
+                                        <p className="text-xs text-gray-400 mt-2">{new Date(review.created_at).toLocaleDateString()}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

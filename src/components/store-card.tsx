@@ -12,6 +12,7 @@ interface StoreCardProps {
     imageUrl: string;
     category: string;
     priority?: boolean;
+    isOpen?: boolean;
 }
 
 export function StoreCard({
@@ -23,6 +24,7 @@ export function StoreCard({
     imageUrl,
     category,
     priority = false,
+    isOpen = true,
 }: StoreCardProps) {
     const [isFavorite, setIsFavorite] = useState(false);
     const supabase = createClient();
@@ -55,7 +57,7 @@ export function StoreCard({
     };
 
     return (
-        <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1 group relative">
+        <article className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-xl hover:shadow-red-100/50 transition-all duration-300 transform hover:-translate-y-1 group relative ${!isOpen ? 'opacity-80' : ''}`}>
             <button
                 onClick={toggleFavorite}
                 className="absolute top-3 left-3 z-20 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm active:scale-90 transition-all hover:bg-red-50"
@@ -71,7 +73,7 @@ export function StoreCard({
                         fill
                         priority={priority}
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                        className={`object-cover group-hover:scale-105 transition-transform duration-700 ${!isOpen ? 'grayscale' : ''}`}
                         placeholder="empty"
                     />
                 ) : (
@@ -80,6 +82,14 @@ export function StoreCard({
                     </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+
+                {!isOpen && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px] z-10">
+                        <span className="bg-red-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg border border-red-400">
+                            Cerrado
+                        </span>
+                    </div>
+                )}
 
                 <div className="absolute top-3 right-3 text-gray-600 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-sm z-10">
                     <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
