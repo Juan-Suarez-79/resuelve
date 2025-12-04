@@ -98,18 +98,43 @@ export default function StorePage() {
             if (productsData) setProducts(productsData);
 
             // Fetch Reviews
-            const { data: reviewsData } = await supabase
+            const { data: reviewsData, error: reviewsError } = await supabase
                 .from('reviews')
                 .select('*')
                 .eq('store_id', storeId)
                 .order('created_at', { ascending: false });
 
+            if (reviewsError) {
+                console.error("Error fetching reviews:", reviewsError);
+            }
+
             if (reviewsData) {
-                setReviews(reviewsData);
+                // Calculate average immediately so it shows up even if profiles fail
                 if (reviewsData.length > 0) {
                     const avg = reviewsData.reduce((acc, r) => acc + r.rating, 0) / reviewsData.length;
                     setAverageRating(avg);
                 }
+
+                // Fetch profiles separately to avoid RLS join issues
+                const userIds = [...new Set(reviewsData.map(r => r.user_id))];
+                let reviewsWithProfiles = reviewsData;
+
+                if (userIds.length > 0) {
+                    const { data: profilesData } = await supabase
+                        .from('profiles')
+                        .select('id, full_name')
+                        .in('id', userIds);
+
+                    if (profilesData) {
+                        const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+                        reviewsWithProfiles = reviewsData.map(r => ({
+                            ...r,
+                            profiles: profilesMap.get(r.user_id) || { full_name: 'Usuario' }
+                        }));
+                    }
+                }
+
+                setReviews(reviewsWithProfiles);
             }
 
             setLoading(false);
@@ -323,7 +348,7 @@ export default function StorePage() {
                                 {reviews.map((review) => (
                                     <div key={review.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="font-bold text-sm text-gray-900">Usuario</span>
+                                            <span className="font-bold text-sm text-gray-900">{review.profiles?.full_name || "Usuario"}</span>
                                             <div className="flex items-center gap-0.5">
                                                 {[...Array(5)].map((_, i) => (
                                                     <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
