@@ -26,6 +26,8 @@ export default function CartPage() {
     const [deliveryFee, setDeliveryFee] = useState(0);
     const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
     const [storeLocation, setStoreLocation] = useState<{ lat: number, lng: number } | null>(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [waLink, setWaLink] = useState("");
 
     const supabase = createClient();
     const subtotal = totalUsd();
@@ -223,12 +225,10 @@ export default function CartPage() {
             message += `_Quedo atento a la ubicación para retirar._`;
         }
 
-        const waLink = generateWhatsAppLink(phoneStore, message);
-
+        const link = generateWhatsAppLink(phoneStore, message);
+        setWaLink(link);
         clearCart();
-        clearCart();
-        // Use location.href for better mobile compatibility (especially iOS)
-        window.location.href = waLink;
+        setShowSuccessModal(true);
     };
 
     const copyToClipboard = (text: string) => {
@@ -236,7 +236,7 @@ export default function CartPage() {
         toast("Copiado al portapapeles", "success");
     };
 
-    if (items.length === 0) {
+    if (items.length === 0 && !showSuccessModal) {
         return (
             <div className="flex flex-col items-center justify-center h-[80vh] px-4 text-center">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -253,7 +253,7 @@ export default function CartPage() {
     const selectedPaymentDetails = storePaymentMethods.find(m => m.type === paymentMethod)?.details;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="min-h-screen bg-gray-50 pb-32 relative">
             <MotionWrapper className="p-4 max-w-lg mx-auto">
                 <h1 className="text-3xl font-bold text-gray-900 mb-6 tracking-tight">Tu Pedido</h1>
 
@@ -541,6 +541,33 @@ export default function CartPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300 relative">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <MessageCircle className="w-10 h-10 text-green-600 fill-green-600/20" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Pedido Registrado!</h2>
+                        <p className="text-gray-600 mb-6 leading-relaxed">
+                            Gracias por usar <span className="font-bold text-brand-red">Resuelve</span>. Tu pedido ha sido creado correctamente.
+                        </p>
+                        <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-6">
+                            <p className="text-sm text-green-800 font-medium">
+                                ⚠️ Para completar tu compra, debes enviar los detalles al vendedor por WhatsApp.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => window.location.href = waLink}
+                            className="w-full bg-[#25D366] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-green-200 active:scale-[0.98] hover:bg-green-600 transition-all flex items-center justify-center gap-2"
+                        >
+                            <MessageCircle className="w-6 h-6 fill-white/20" />
+                            Enviar a WhatsApp
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

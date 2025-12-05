@@ -70,6 +70,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Resuelve",
   },
+  icons: {
+    icon: '/icon-192.png',
+    shortcut: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export const viewport: Viewport = {

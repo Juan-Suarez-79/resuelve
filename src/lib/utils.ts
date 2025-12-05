@@ -20,7 +20,7 @@ export function generateWhatsAppLink(phone: string, message: string) {
         cleanPhone = '58' + cleanPhone.substring(1);
     }
     const encodedMessage = encodeURIComponent(message);
-    return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+    return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMessage}`;
 }
 
 export async function getExchangeRate(): Promise<number> {
