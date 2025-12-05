@@ -14,7 +14,11 @@ export function formatCurrency(amount: number, currency: 'USD' | 'VES') {
 }
 
 export function generateWhatsAppLink(phone: string, message: string) {
-    const cleanPhone = phone.replace(/\D/g, '');
+    let cleanPhone = phone.replace(/\D/g, '');
+    // If it starts with 04 (Venezuelan mobile), replace 0 with 58
+    if (cleanPhone.startsWith('04')) {
+        cleanPhone = '58' + cleanPhone.substring(1);
+    }
     const encodedMessage = encodeURIComponent(message);
     return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
 }
