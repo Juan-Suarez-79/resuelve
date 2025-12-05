@@ -7,5 +7,5 @@ ADD COLUMN IF NOT EXISTS product_id UUID REFERENCES public.products(id) ON DELET
 -- CREATE POLICY "Users can insert their own reviews" ON public.reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
 -- This is fine.
 
--- We might want to ensure product_id is indexed for performance
+-- We might want to ensure product_id is indexed for performancee
 CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON public.reviews(product_id);
