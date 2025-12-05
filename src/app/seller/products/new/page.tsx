@@ -15,6 +15,7 @@ export default function NewProductPage() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [price, setPrice] = useState("");
+    const [stockQuantity, setStockQuantity] = useState(0);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -103,6 +104,7 @@ export default function NewProductPage() {
             price_usd: parseFloat(price),
             image_url: imageUrl,
             in_stock: inStock,
+            stock_quantity: stockQuantity,
             category: 'General' // Default for now
         });
 
@@ -200,12 +202,32 @@ export default function NewProductPage() {
                         </div>
                     </div>
 
+                    <div>
+                        <label className="block text-sm font-bold text-gray-900 mb-2 ml-1">
+                            Cantidad en Inventario
+                        </label>
+                        <input
+                            type="number"
+                            value={stockQuantity}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setStockQuantity(val);
+                                if (val === 0) setInStock(false);
+                                else setInStock(true);
+                            }}
+                            placeholder="0"
+                            className="w-full px-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400"
+                        />
+                    </div>
+
                     <div className="flex items-center justify-between py-2 border-t border-gray-50 mt-4 pt-4">
                         <div>
                             <label className="text-sm font-bold text-gray-900 block">
                                 Disponibilidad
                             </label>
-                            <p className="text-xs text-gray-500">¿El producto está en stock?</p>
+                            <p className="text-xs text-gray-500">
+                                {inStock ? "El producto está visible" : "El producto está oculto"}
+                            </p>
                         </div>
                         <button
                             onClick={() => setInStock(!inStock)}

@@ -104,6 +104,42 @@ export default function CartPage() {
         const exchangeRate = await getExchangeRate();
         const storeTotalUsd = subtotal;
 
+        // Validate Stock
+        const productIds = items.map(i => i.id);
+        const { data: products, error: productsError } = await supabase
+            .from('products')
+            .select('id, stock_quantity, title')
+            .in('id', productIds);
+
+        if (productsError) {
+            toast("Error verificando disponibilidad de productos", "error");
+            return;
+        }
+
+        let stockIssue = false;
+        if (products) {
+            for (const item of items) {
+                const product = products.find(p => p.id === item.id);
+                if (!product) continue;
+
+                if (product.stock_quantity < item.quantity) {
+                    stockIssue = true;
+                    if (product.stock_quantity === 0) {
+                        toast(`El producto "${product.title}" se ha agotado.`, "error");
+                        updateQuantity(item.id, 0); // Remove from cart
+                    } else {
+                        toast(`Solo quedan ${product.stock_quantity} unidades de "${product.title}".`, "error");
+                        updateQuantity(item.id, product.stock_quantity); // Adjust quantity
+                    }
+                }
+            }
+        }
+
+        if (stockIssue) {
+            toast("Hemos actualizado tu carrito con la disponibilidad actual.", "error");
+            return;
+        }
+
         const orderPayload = {
             p_store_id: storeId,
             p_buyer_name: name,
