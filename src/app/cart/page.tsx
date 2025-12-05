@@ -6,6 +6,7 @@ import { Trash2, MessageCircle, MapPin, User, Minus, Plus, AlertTriangle, Credit
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 import { useToast } from "@/components/ui/toast";
@@ -31,10 +32,19 @@ export default function CartPage() {
     const finalDeliveryFee = deliveryMethod === 'delivery' ? deliveryFee : 0;
     const total = subtotal + finalDeliveryFee;
 
+    const router = useRouter();
+
     // Fetch payment methods, exchange rate, delivery fee, and saved addresses
     useEffect(() => {
         const init = async () => {
             const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                toast("Debes iniciar sesión para ver tu carrito", "error");
+                router.push('/login?redirectTo=/cart');
+                return;
+            }
+
             const rate = await getExchangeRate();
             setExchangeRate(rate);
 
@@ -77,7 +87,7 @@ export default function CartPage() {
             }
         };
         init();
-    }, [items, supabase]);
+    }, [items, supabase, router]);
 
     const handleCheckout = async () => {
         if (items.length === 0) return;
