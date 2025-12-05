@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { BottomNav } from "@/components/ui/bottom-nav";
-import { SupportButton } from "@/components/support-button";
+import { MainLayout } from "@/components/main-layout";
 import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
@@ -119,11 +118,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 pb-16 md:pb-0`}
       >
         <ToastProvider>
-          <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden">
+          <MainLayout>
             {children}
-            <SupportButton />
-            <BottomNav />
-          </div>
+          </MainLayout>
           <Analytics />
         </ToastProvider>
       </body>

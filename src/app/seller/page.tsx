@@ -28,6 +28,8 @@ export default function SellerDashboard() {
     const [storeSlug, setStoreSlug] = useState("");
     const [approvalStatus, setApprovalStatus] = useState<string>('approved'); // Default to approved to avoid flash, or handle loading
     const [locationRequests, setLocationRequests] = useState(0);
+    const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+    const [isBanned, setIsBanned] = useState(false);
     const supabase = createClient();
     const router = useRouter();
     const { toast } = useToast();
@@ -50,7 +52,7 @@ export default function SellerDashboard() {
                         .single(),
                     supabase
                         .from('stores')
-                        .select('id, approval_status, location_requests_count, slug')
+                        .select('id, approval_status, location_requests_count, slug, is_banned')
                         .eq('owner_id', user.id)
                         .single()
                 ]);
@@ -69,6 +71,7 @@ export default function SellerDashboard() {
 
                 if (store.location_requests_count) setLocationRequests(store.location_requests_count);
                 if (store.slug) setStoreSlug(store.slug);
+                if (store.is_banned) setIsBanned(true);
 
                 // Fetch Orders
                 const { data: ordersData } = await supabase
@@ -84,6 +87,22 @@ export default function SellerDashboard() {
                     setOrders(ordersData);
                     setTotalOrders(ordersData.length);
                     if (store.approval_status) setApprovalStatus(store.approval_status);
+
+                    // If rejected, fetch reason from notifications
+                    if (store.approval_status === 'rejected') {
+                        const { data: notif } = await supabase
+                            .from('notifications')
+                            .select('message')
+                            .eq('user_id', user.id)
+                            .eq('type', 'warning') // Assuming 'warning' is used for rejection
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (notif) {
+                            setRejectionReason(notif.message);
+                        }
+                    }
 
                     // Calculate Metrics
                     const today = new Date().toISOString().split('T')[0];
@@ -269,7 +288,7 @@ export default function SellerDashboard() {
             </MotionWrapper>
 
             {/* Floating Action Button - Only if Approved */}
-            {approvalStatus === 'approved' && (
+            {approvalStatus === 'approved' && !isBanned && (
                 <Link
                     href="/seller/products/new"
                     className="fixed bottom-36 right-6 w-16 h-16 bg-brand-red text-white rounded-full shadow-xl shadow-red-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-50 group"
@@ -278,8 +297,26 @@ export default function SellerDashboard() {
                 </Link>
             )}
 
-            {/* Approval Status Modal */}
-            {approvalStatus === 'pending' && (
+            {/* Banned Modal */}
+            {isBanned && (
+                <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="text-4xl">🚫</div>
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 mb-3 leading-tight">Cuenta Suspendida</h2>
+                        <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+                            Tu cuenta ha sido suspendida permanentemente por incumplimiento de nuestros términos y condiciones.
+                        </p>
+                        <div className="p-4 bg-red-50 rounded-xl text-xs text-red-600 font-bold border border-red-100">
+                            No puedes acceder a la plataforma.
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Approval Status Modal (Only if NOT banned) */}
+            {approvalStatus === 'pending' && !isBanned && (
                 <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300">
                         <div className="w-20 h-20 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -302,16 +339,32 @@ export default function SellerDashboard() {
                 </div>
             )}
 
-            {approvalStatus === 'rejected' && (
+            {approvalStatus === 'rejected' && !isBanned && (
                 <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300">
                         <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                             <div className="text-4xl">❌</div>
                         </div>
                         <h2 className="text-2xl font-black text-gray-900 mb-3 leading-tight">Solicitud Rechazada</h2>
-                        <p className="text-gray-500 font-medium mb-8 leading-relaxed">
-                            Lo sentimos, tu solicitud para ser vendedor no ha sido aprobada. Contacta a soporte para más información.
+                        <p className="text-gray-500 font-medium mb-4 leading-relaxed">
+                            Tu solicitud ha sido rechazada.
                         </p>
+
+                        {rejectionReason && (
+                            <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6 text-left">
+                                <p className="text-sm text-red-800 font-bold mb-1">Motivo:</p>
+                                <p className="text-xs text-red-700 leading-relaxed">
+                                    {rejectionReason}
+                                </p>
+                            </div>
+                        )}
+
+                        <Link
+                            href="/seller/kyc"
+                            className="block w-full py-3 bg-brand-red text-white font-bold rounded-xl hover:bg-red-700 transition-colors"
+                        >
+                            Intentar Nuevamente
+                        </Link>
                     </div>
                 </div>
             )}

@@ -36,12 +36,17 @@ export default function NewProductPage() {
             }
             const { data: store } = await supabase
                 .from('stores')
-                .select('id')
+                .select('id, approval_status')
                 .eq('owner_id', user.id)
                 .single();
 
             if (store) {
                 setStoreId(store.id);
+                if (store.approval_status !== 'approved') {
+                    toast("Debes estar verificado para crear productos", "error");
+                    router.push('/seller');
+                    return;
+                }
             } else {
                 console.error("No store found for user:", user.id);
             }

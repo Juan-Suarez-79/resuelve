@@ -103,6 +103,14 @@ export default function KYCPage() {
 
             if (updateError) throw updateError;
 
+            // Update Store Status to Pending (Re-verification)
+            const { error: storeError } = await supabase
+                .from('stores')
+                .update({ approval_status: 'pending' })
+                .eq('owner_id', userId);
+
+            if (storeError) throw storeError;
+
             toast("Documentos enviados correctamente", "success");
             // Refresh to show new state
             window.location.reload();

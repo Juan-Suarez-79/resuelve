@@ -41,6 +41,12 @@ export default function KYCVerificationPage() {
     const [loading, setLoading] = useState(true);
     const [globalFilter, setGlobalFilter] = useState("");
 
+    // Rejection Modal State
+    const [rejectModalOpen, setRejectModalOpen] = useState(false);
+    const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+    const [rejectReason, setRejectReason] = useState("");
+    const [processingReject, setProcessingReject] = useState(false);
+
     const supabase = createClient();
     const { toast } = useToast();
 
@@ -82,6 +88,84 @@ export default function KYCVerificationPage() {
             toast(status === 'approved' ? "Tienda aprobada" : "Tienda rechazada", "success");
             fetchStores();
         }
+    };
+
+    const openRejectModal = (store: Store) => {
+        setSelectedStore(store);
+        setRejectReason("");
+        setRejectModalOpen(true);
+    };
+
+    const closeRejectModal = () => {
+        setRejectModalOpen(false);
+        setSelectedStore(null);
+        setRejectReason("");
+    };
+
+    const handleRejectBlock = async () => {
+        if (!selectedStore) return;
+        setProcessingReject(true);
+
+        // 1. Update store: rejected AND banned
+        const { error } = await supabase
+            .from('stores')
+            .update({
+                approval_status: 'rejected',
+                is_banned: true
+            })
+            .eq('id', selectedStore.id);
+
+        if (error) {
+            toast("Error al bloquear tienda", "error");
+        } else {
+            toast("Tienda rechazada y bloqueada permanentemente", "success");
+
+            // Notify user (Optional but good practice)
+            await supabase.from('notifications').insert({
+                user_id: selectedStore.owner_id,
+                title: "Cuenta Suspendida",
+                message: "Tu solicitud de verificación ha sido rechazada y tu cuenta ha sido suspendida permanentemente por incumplimiento de términos.",
+                type: "error"
+            });
+
+            fetchStores();
+            closeRejectModal();
+        }
+        setProcessingReject(false);
+    };
+
+    const handleRejectRetry = async () => {
+        if (!selectedStore) return;
+        if (!rejectReason.trim()) {
+            toast("Debes ingresar un motivo para el rechazo", "error");
+            return;
+        }
+        setProcessingReject(true);
+
+        // 1. Update store: rejected (but NOT banned)
+        const { error } = await supabase
+            .from('stores')
+            .update({ approval_status: 'rejected' })
+            .eq('id', selectedStore.id);
+
+        if (error) {
+            toast("Error al rechazar solicitud", "error");
+        } else {
+            toast("Solicitud rechazada. Se ha notificado al usuario.", "success");
+
+            // 2. Send Notification with Reason
+            await supabase.from('notifications').insert({
+                user_id: selectedStore.owner_id,
+                title: "Verificación Rechazada",
+                message: `Tu verificación fue rechazada. Motivo: ${rejectReason}. Por favor, corrige los errores e inténtalo nuevamente.`,
+                type: "warning",
+                link: "/seller/kyc" // Assuming this is where they retry
+            });
+
+            fetchStores();
+            closeRejectModal();
+        }
+        setProcessingReject(false);
     };
 
     // Table Config
@@ -136,7 +220,7 @@ export default function KYCVerificationPage() {
                         <CheckCircle2 className="w-4 h-4" /> Aprobar
                     </button>
                     <button
-                        onClick={() => handleApproval(info.row.original.id, 'rejected')}
+                        onClick={() => openRejectModal(info.row.original)}
                         className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-xs font-bold"
                     >
                         <XCircle className="w-4 h-4" /> Rechazar
@@ -158,8 +242,10 @@ export default function KYCVerificationPage() {
 
     if (loading) return <div className="text-white flex items-center gap-2"><Loader2 className="animate-spin" /> Cargando solicitudes...</div>;
 
+
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-950 border border-gray-800 p-4 rounded-2xl">
                 <div>
                     <h1 className="text-2xl font-bold text-white mb-1">Verificaciones KYC</h1>
@@ -234,6 +320,64 @@ export default function KYCVerificationPage() {
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Rejection Modal */}
+            {rejectModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                        <h2 className="text-xl font-bold text-white mb-4">Rechazar Solicitud</h2>
+                        <p className="text-gray-400 text-sm mb-4">
+                            Selecciona una acción para la solicitud de <span className="text-white font-medium">{selectedStore?.name}</span>.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">Motivo del rechazo (para reintento)</label>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    placeholder="Ej: La foto de la cédula está borrosa..."
+                                    className="w-full bg-gray-950 border border-gray-800 text-white rounded-xl p-3 text-sm focus:border-brand-red focus:ring-1 focus:ring-brand-red outline-none min-h-[100px]"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-3 pt-2">
+                                <button
+                                    onClick={handleRejectRetry}
+                                    disabled={processingReject}
+                                    className="w-full py-3 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 hover:bg-yellow-500/20 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {processingReject ? <Loader2 className="animate-spin w-4 h-4" /> : null}
+                                    Rechazar y Permitir Reintento
+                                </button>
+
+                                <div className="relative flex items-center py-2">
+                                    <div className="flex-grow border-t border-gray-800"></div>
+                                    <span className="flex-shrink-0 mx-4 text-gray-600 text-xs uppercase">O zona de peligro</span>
+                                    <div className="flex-grow border-t border-gray-800"></div>
+                                </div>
+
+                                <button
+                                    onClick={handleRejectBlock}
+                                    disabled={processingReject}
+                                    className="w-full py-3 bg-red-500 text-white hover:bg-red-600 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {processingReject ? <Loader2 className="animate-spin w-4 h-4" /> : null}
+                                    Rechazar y Bloquear (Permanente)
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={closeRejectModal}
+                            disabled={processingReject}
+                            className="mt-4 w-full py-2 text-gray-500 hover:text-white text-sm transition-colors"
+                        >
+                            Cancelar
+                        </button>
                     </div>
                 </div>
             )}
