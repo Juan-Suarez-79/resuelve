@@ -102,6 +102,11 @@ function LoginForm() {
                         className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-500 font-medium text-black"
                     />
                 </div>
+                <div className="text-right">
+                    <Link href="/forgot-password" className="text-sm text-brand-red font-bold hover:underline">
+                        ¿Olvidaste tu contraseña?
+                    </Link>
+                </div>
 
                 <button
                     type="submit"

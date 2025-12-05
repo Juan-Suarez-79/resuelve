@@ -15,6 +15,7 @@ function SignupForm() {
     const [role, setRole] = useState<"buyer" | "seller">("buyer");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [fullName, setFullName] = useState("");
     const [phone, setPhone] = useState("");
     const [loading, setLoading] = useState(false);
@@ -27,6 +28,12 @@ function SignupForm() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        if (password !== confirmPassword) {
+            setError("Las contraseñas no coinciden");
+            setLoading(false);
+            return;
+        }
 
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email,
@@ -138,6 +145,17 @@ function SignupForm() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         placeholder="Contraseña"
+                        className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-500 font-medium text-black"
+                    />
+                </div>
+                <div className="relative group">
+                    <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-brand-red transition-colors" />
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        placeholder="Confirmar Contraseña"
                         className="w-full pl-12 pr-5 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/10 outline-none transition-all placeholder:text-gray-500 font-medium text-black"
                     />
                 </div>
