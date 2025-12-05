@@ -65,6 +65,11 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Resuelve",
+  },
 };
 
 export const viewport: Viewport = {

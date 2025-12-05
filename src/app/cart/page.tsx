@@ -226,7 +226,9 @@ export default function CartPage() {
         const waLink = generateWhatsAppLink(phoneStore, message);
 
         clearCart();
-        window.open(waLink, "_blank");
+        clearCart();
+        // Use location.href for better mobile compatibility (especially iOS)
+        window.location.href = waLink;
     };
 
     const copyToClipboard = (text: string) => {

@@ -55,16 +55,24 @@ export default function OrderDetailsPage() {
 
     const updateStatus = async (newStatus: string) => {
         setUpdating(true);
-        const { error } = await supabase
-            .from('orders')
-            .update({ status: newStatus })
-            .eq('id', id);
+        let error = null;
+
+        if (newStatus === 'cancelled') {
+            const { error: rpcError } = await supabase.rpc('cancel_order_and_restore_stock', { p_order_id: id });
+            error = rpcError;
+        } else {
+            const { error: updateError } = await supabase
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', id);
+            error = updateError;
+        }
 
         if (error) {
-            toast("Error actualizando estado", "error");
+            toast("Error actualizando estado: " + error.message, "error");
         } else {
             setOrder(prev => prev ? { ...prev, status: newStatus as any } : null);
-            toast("Estado actualizado correctamente", "success");
+            toast(newStatus === 'cancelled' ? "Pedido cancelado y stock restaurado" : "Estado actualizado correctamente", "success");
         }
         setUpdating(false);
     };
