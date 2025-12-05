@@ -86,10 +86,24 @@ export default function EditProductPage() {
     };
 
     const handleSave = async () => {
-        if (!title || !price) {
-            toast("Por favor completa los campos obligatorios.", "error");
+        if (!title.trim()) {
+            toast("El nombre del producto es obligatorio.", "error");
             return;
         }
+        if (!price) {
+            toast("El precio es obligatorio.", "error");
+            return;
+        }
+
+        // Normalize price (replace comma with dot)
+        const normalizedPrice = price.replace(',', '.');
+        const priceValue = parseFloat(normalizedPrice);
+
+        if (isNaN(priceValue) || priceValue < 0) {
+            toast("El precio no es válido.", "error");
+            return;
+        }
+
         setSaving(true);
 
         let imageUrl = imagePreview;
@@ -119,7 +133,7 @@ export default function EditProductPage() {
             .update({
                 title,
                 description,
-                price_usd: parseFloat(price),
+                price_usd: priceValue,
                 image_url: imageUrl,
                 in_stock: inStock
             })
@@ -212,9 +226,17 @@ export default function EditProductPage() {
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 value={price}
-                                onChange={(e) => setPrice(e.target.value)}
+                                onChange={(e) => {
+                                    // Allow only numbers and one decimal separator (dot or comma)
+                                    const val = e.target.value;
+                                    if (/^[\d.,]*$/.test(val)) {
+                                        setPrice(val);
+                                    }
+                                }}
+                                placeholder="0.00"
                                 className="w-full pl-10 pr-4 py-4 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-red focus:ring-4 focus:ring-brand-red/5 outline-none transition-all text-xl font-bold text-gray-900 placeholder:text-gray-300"
                             />
                         </div>

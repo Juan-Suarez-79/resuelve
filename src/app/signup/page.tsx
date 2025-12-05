@@ -32,6 +32,7 @@ function SignupForm() {
             email,
             password,
             options: {
+                emailRedirectTo: 'https://resuelveve.vercel.app/?verified=true',
                 data: {
                     full_name: fullName,
                     phone: phone,

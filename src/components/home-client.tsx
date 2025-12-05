@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, ChevronDown, Loader2, Search, X, MapPinned } from "lucide-react";
+import { MapPin, ChevronDown, Loader2, Search, X, MapPinned, CheckCircle } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { StoreCard } from "@/components/store-card";
 import { createClient } from "@/lib/supabase/client";
 import { useGeolocation, calculateDistance, isLocationInCoro, CORO_COORDS } from "@/lib/hooks/use-geolocation";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { MotionWrapper } from "@/components/ui/motion-wrapper";
@@ -43,6 +44,20 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
     const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [showMap, setShowMap] = useState(false);
     const [sortBy, setSortBy] = useState<'distance' | 'rating'>('distance');
+
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [showVerifiedModal, setShowVerifiedModal] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get("verified") === "true") {
+            setShowVerifiedModal(true);
+            // Clean up the URL
+            const newParams = new URLSearchParams(searchParams.toString());
+            newParams.delete("verified");
+            router.replace(`/?${newParams.toString()}`, { scroll: false });
+        }
+    }, [searchParams, router]);
 
     const location = manualLocation || geoLoc;
     const isLocationValid = manualLocation
@@ -340,6 +355,33 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                             className="w-full bg-brand-red text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 active:scale-[0.98] transition-all"
                         >
                             Seleccionar Ubicación en Coro
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Verified Success Modal */}
+            {showVerifiedModal && (
+                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300 relative">
+                        <button
+                            onClick={() => setShowVerifiedModal(false)}
+                            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        >
+                            <X className="w-5 h-5 text-gray-400" />
+                        </button>
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-300 delay-150">
+                            <CheckCircle className="w-10 h-10 text-green-600" />
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 mb-3 leading-tight">¡Cuenta Verificada!</h2>
+                        <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+                            Tu correo ha sido confirmado correctamente. Ya puedes disfrutar de todas las funciones de <strong>Resuelve</strong>.
+                        </p>
+                        <button
+                            onClick={() => setShowVerifiedModal(false)}
+                            className="w-full bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-200 active:scale-[0.98] hover:bg-green-700 transition-all"
+                        >
+                            ¡Entendido!
                         </button>
                     </div>
                 </div>
