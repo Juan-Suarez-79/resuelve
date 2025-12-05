@@ -267,6 +267,7 @@ export default function HomeClient({ initialStores, initialProducts }: HomeClien
                                                 category={store.category || "General"}
                                                 priority={index < 4}
                                                 isOpen={store.is_open}
+                                                planTier={store.plan_tier}
                                             />
                                         </Link>
                                     </MotionWrapper>

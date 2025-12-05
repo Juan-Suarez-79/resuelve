@@ -27,18 +27,52 @@ export function ReviewList({ productId, refreshTrigger }: ReviewListProps) {
 
     useEffect(() => {
         async function fetchReviews() {
-            const { data } = await supabase
+            // 1. Fetch reviews
+            const { data: reviewsData, error } = await supabase
                 .from('reviews')
-                .select(`
-                    *,
-                    profiles (full_name)
-                `)
+                .select('*')
                 .eq('product_id', productId)
                 .order('created_at', { ascending: false });
 
-            if (data) {
-                setReviews(data as any);
+            if (error) {
+                console.error("Error fetching reviews:", error);
+                setLoading(false);
+                return;
             }
+
+            if (!reviewsData || reviewsData.length === 0) {
+                setReviews([]);
+                setLoading(false);
+                return;
+            }
+
+            // 2. Fetch profiles for these reviews
+            const userIds = [...new Set(reviewsData.map((r: any) => r.user_id))];
+
+            let reviewsWithProfiles = reviewsData;
+
+            if (userIds.length > 0) {
+                const { data: profilesData } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', userIds);
+
+                if (profilesData) {
+                    const profilesMap = new Map(profilesData.map((p: any) => [p.id, p]));
+                    reviewsWithProfiles = reviewsData.map((r: any) => ({
+                        ...r,
+                        profiles: profilesMap.get(r.user_id) || { full_name: 'Usuario Anónimo' }
+                    }));
+                } else {
+                    // Fallback if profiles fetch fails
+                    reviewsWithProfiles = reviewsData.map((r: any) => ({
+                        ...r,
+                        profiles: { full_name: 'Usuario Anónimo' }
+                    }));
+                }
+            }
+
+            setReviews(reviewsWithProfiles as Review[]);
             setLoading(false);
         }
         fetchReviews();

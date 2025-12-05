@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Star, Search, MapPin, Loader2, X, Flag } from "lucide-react";
+import { ArrowLeft, Star, Search, MapPin, Loader2, X, Flag, Crown, Sparkles } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -236,7 +236,7 @@ export default function StorePage() {
     return (
         <div className="pb-20 bg-gray-50 min-h-screen">
             {/* Header / Banner */}
-            <div className="relative h-64 w-full bg-gray-900">
+            <div className="relative h-64 w-full bg-gray-900 overflow-hidden">
                 {store.image_url ? (
                     <Image
                         src={store.image_url}
@@ -249,6 +249,14 @@ export default function StorePage() {
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+                {/* Premium Background Effects */}
+                {store.plan_tier === 'vip' && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-yellow-900/20 to-transparent mix-blend-overlay pointer-events-none" />
+                )}
+                {store.plan_tier === 'pro' && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 to-transparent mix-blend-overlay pointer-events-none" />
+                )}
 
                 {/* Navigation Header */}
                 <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10">
@@ -274,7 +282,22 @@ export default function StorePage() {
 
                 {/* Store Info Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                    <h1 className="text-3xl font-bold mb-1">{store.name}</h1>
+                    <div className="flex items-center gap-2 mb-1">
+                        <h1 className="text-3xl font-bold">{store.name}</h1>
+                        {store.plan_tier === 'vip' && (
+                            <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-black px-2 py-1 rounded-full shadow-lg shadow-yellow-500/20 animate-pulse">
+                                <Crown className="w-3 h-3 fill-white" />
+                                VIP
+                            </div>
+                        )}
+                        {store.plan_tier === 'pro' && (
+                            <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-black px-2 py-1 rounded-full shadow-lg shadow-blue-500/20">
+                                <Sparkles className="w-3 h-3 fill-white" />
+                                PRO
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex items-center gap-2 text-sm opacity-90 mb-3">
                         <span className="bg-brand-yellow text-black px-2 py-0.5 rounded font-bold flex items-center gap-1">
                             <Star className="w-3 h-3 fill-black" /> {averageRating > 0 ? averageRating.toFixed(1) : "Nuevo"}

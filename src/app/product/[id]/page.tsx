@@ -28,6 +28,7 @@ export default function ProductDetailsPage() {
     const [isFavorite, setIsFavorite] = useState(false);
     const [showConflictModal, setShowConflictModal] = useState(false);
     const [refreshReviews, setRefreshReviews] = useState(0);
+    const [showReviews, setShowReviews] = useState(false);
 
     useEffect(() => {
         async function fetchProduct() {
@@ -162,16 +163,33 @@ export default function ProductDetailsPage() {
 
                 {/* Reviews Section */}
                 <div className="border-t border-gray-100 pt-8 mb-24">
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Reseñas</h2>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-900">Reseñas</h2>
+                        <button
+                            onClick={() => setShowReviews(!showReviews)}
+                            className="text-sm font-bold text-brand-red hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                            {showReviews ? "Ocultar Reseñas" : "Ver Reseñas"}
+                        </button>
+                    </div>
+
                     <ReviewForm
                         productId={product.id}
                         storeId={product.store_id}
-                        onReviewSubmitted={() => setRefreshReviews(prev => prev + 1)}
+                        onReviewSubmitted={() => {
+                            setRefreshReviews(prev => prev + 1);
+                            setShowReviews(true); // Auto-show reviews after submitting
+                        }}
                     />
-                    <ReviewList
-                        productId={product.id}
-                        refreshTrigger={refreshReviews}
-                    />
+
+                    {showReviews && (
+                        <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                            <ReviewList
+                                productId={product.id}
+                                refreshTrigger={refreshReviews}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Quantity & Add */}
